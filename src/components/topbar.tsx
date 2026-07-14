@@ -6,32 +6,24 @@ import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Boxes,
-  Tags,
-  PackagePlus,
   ShoppingCart,
   Wrench,
   Wallet,
-  ReceiptText,
-  Users,
   Settings,
   Laptop,
   ChevronDown,
   LogOut,
 } from "lucide-react";
-import { NAV } from "@/lib/nav";
+import { NAV, type NavGroup } from "@/lib/nav";
 import { ROLE_LABEL } from "@/lib/types";
 import { useRole } from "./role-context";
 
 const ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   LayoutDashboard,
   Boxes,
-  Tags,
-  PackagePlus,
   ShoppingCart,
   Wrench,
   Wallet,
-  ReceiptText,
-  Users,
   Settings,
 };
 
@@ -39,13 +31,16 @@ export function Topbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { role, user, logout, can } = useRole();
-  const [open, setOpen] = useState<string | null>(null); // menu key đang mở
-  const [left, setLeft] = useState(0); // vị trí ngang của dropdown (px, so với barRef)
+  const [open, setOpen] = useState<string | null>(null);
+  const [left, setLeft] = useState(0);
   const [userMenu, setUserMenu] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
 
-  const visible = NAV.filter((n) => can(n.key).view);
-  const openItem = visible.find((n) => n.key === open);
+  // lọc nhóm + section theo quyền
+  const groups = NAV.map((g) => ({ ...g, sections: g.sections.filter((s) => can(s.key).view) })).filter(
+    (g) => g.sections.length > 0,
+  );
+  const openGroup = groups.find((g) => g.id === open);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -63,92 +58,98 @@ export function Topbar() {
     setUserMenu(false);
   }, [pathname]);
 
-  const toggleMenu = (key: string, hasMenu: boolean, href: string, e: React.MouseEvent<HTMLButtonElement>) => {
-    if (!hasMenu) {
-      router.push(href);
-      return;
-    }
-    if (open === key) {
+  const isGroupActive = (g: NavGroup) =>
+    g.sections.some((s) => pathname === `/${s.key}` || pathname.startsWith(`/${s.key}/`));
+
+  const groupWidth = (g: NavGroup) => (g.sections.length > 1 ? Math.min(g.sections.length * 184, 560) : 232);
+
+  const toggle = (g: NavGroup, e: React.MouseEvent<HTMLButtonElement>) => {
+    if (open === g.id) {
       setOpen(null);
       return;
     }
     const bar = barRef.current?.getBoundingClientRect();
     const btn = e.currentTarget.getBoundingClientRect();
     if (bar) {
-      // canh trái dropdown theo nút, không tràn khỏi thanh
-      const maxLeft = bar.width - 240;
-      setLeft(Math.min(btn.left - bar.left, Math.max(0, maxLeft)));
+      const w = groupWidth(g);
+      setLeft(Math.max(0, Math.min(btn.left - bar.left, bar.width - w - 8)));
     }
     setUserMenu(false);
-    setOpen(key);
+    setOpen(g.id);
   };
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--surface)]/80 shadow-sm backdrop-blur-xl">
-      <div ref={barRef} className="relative mx-auto flex h-15 max-w-[1400px] items-center gap-1 px-4">
+      <div ref={barRef} className="relative flex h-14 items-center gap-1 px-4 md:px-6">
         <Link href="/tong-quan" className="flex items-center gap-2.5 pr-3">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--purple)] text-white shadow-md-soft">
-            <Laptop size={19} />
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--purple)] text-white shadow-md-soft">
+            <Laptop size={18} />
           </span>
-          <span className="hidden leading-tight sm:block">
-            <span className="block text-sm font-bold tracking-tight">Kho Laptop</span>
-            <span className="block text-[11px] text-[var(--muted)]">Quản lý nội bộ</span>
+          <span className="hidden leading-tight md:block">
+            <span className="block text-[13px] font-bold tracking-tight">Kho Laptop</span>
+            <span className="block text-[10px] text-[var(--muted)]">Quản lý nội bộ</span>
           </span>
         </Link>
 
         <nav className="flex flex-1 items-center gap-0.5 overflow-x-auto">
-          {visible.map((item) => {
-            const Icon = ICONS[item.icon] ?? Laptop;
-            const active = pathname === item.href || pathname.startsWith(item.href + "/");
-            const hasMenu = item.children.length > 1;
-            const isOpen = open === item.key;
+          {groups.map((g) => {
+            const Icon = ICONS[g.icon] ?? Laptop;
+            const active = isGroupActive(g);
+            const isOpen = open === g.id;
             return (
               <button
-                key={item.key}
-                onClick={(e) => toggleMenu(item.key, hasMenu, item.href, e)}
-                className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium ${
+                key={g.id}
+                onClick={(e) => toggle(g, e)}
+                className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-[13px] font-medium ${
                   active || isOpen
                     ? "bg-[var(--primary)]/12 text-[var(--primary)]"
                     : "text-[var(--foreground)] hover:bg-[var(--surface-2)]"
                 }`}
               >
                 <Icon size={16} />
-                <span className="hidden lg:inline">{item.label}</span>
-                {hasMenu && (
-                  <ChevronDown size={13} className={`opacity-60 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-                )}
+                <span className="hidden lg:inline">{g.label}</span>
+                <ChevronDown size={13} className={`opacity-60 transition-transform ${isOpen ? "rotate-180" : ""}`} />
               </button>
             );
           })}
         </nav>
 
-        {/* Dropdown menu con — render ngoài vùng cuộn để không bị cắt */}
-        {openItem && (
-          <div className="animate-menu absolute top-full z-50 mt-1.5 w-60" style={{ left }}>
-            <div className="card shadow-lg-soft overflow-hidden p-1.5">
-              <div className="px-2.5 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
-                {openItem.label}
-              </div>
-              {openItem.children.map((c) => {
-                const childActive = pathname === c.href;
-                return (
-                  <Link
-                    key={c.href}
-                    href={c.href}
-                    onClick={() => setOpen(null)}
-                    className={`group flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm ${
-                      childActive ? "bg-[var(--primary)]/12 text-[var(--primary)]" : "hover:bg-[var(--surface-2)]"
-                    }`}
-                  >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        childActive ? "bg-[var(--primary)]" : "bg-[var(--border)] group-hover:bg-[var(--primary)]"
-                      }`}
-                    />
-                    {c.label}
-                  </Link>
-                );
-              })}
+        {/* Mega dropdown — render ngoài vùng cuộn để không bị cắt */}
+        {openGroup && (
+          <div
+            className="animate-menu absolute top-full z-50 mt-1.5"
+            style={{ left, width: groupWidth(openGroup) }}
+          >
+            <div className="card shadow-lg-soft flex gap-1 overflow-hidden p-2">
+              {openGroup.sections.map((s) => (
+                <div key={s.key} className="min-w-0 flex-1">
+                  {openGroup.sections.length > 1 && (
+                    <div className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                      {s.title}
+                    </div>
+                  )}
+                  {s.links.map((l) => {
+                    const childActive = pathname === l.href;
+                    return (
+                      <Link
+                        key={l.href}
+                        href={l.href}
+                        onClick={() => setOpen(null)}
+                        className={`group flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${
+                          childActive ? "bg-[var(--primary)]/12 text-[var(--primary)]" : "hover:bg-[var(--surface-2)]"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                            childActive ? "bg-[var(--primary)]" : "bg-[var(--border)] group-hover:bg-[var(--primary)]"
+                          }`}
+                        />
+                        <span className="truncate">{l.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -160,7 +161,7 @@ export function Topbar() {
               setOpen(null);
               setUserMenu((v) => !v);
             }}
-            className={`flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm ${
+            className={`flex items-center gap-2 rounded-lg px-1.5 py-1.5 text-sm ${
               userMenu ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]"
             }`}
           >
@@ -168,8 +169,8 @@ export function Topbar() {
               {(user?.fullName ?? "?").charAt(0)}
             </span>
             <span className="hidden text-left leading-tight sm:block">
-              <span className="block text-sm font-medium">{user?.fullName ?? "Người dùng"}</span>
-              <span className="block text-[11px] text-[var(--muted)]">{ROLE_LABEL[role]}</span>
+              <span className="block text-[13px] font-medium">{user?.fullName ?? "Người dùng"}</span>
+              <span className="block text-[10px] text-[var(--muted)]">{ROLE_LABEL[role]}</span>
             </span>
             <ChevronDown size={14} className={`opacity-60 transition-transform ${userMenu ? "rotate-180" : ""}`} />
           </button>

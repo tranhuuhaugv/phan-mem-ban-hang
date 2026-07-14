@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
-import { Be_Vietnam_Pro } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { RoleProvider } from "@/components/role-context";
 import { ToastProvider } from "@/components/toast";
 import { AuthGate } from "@/components/auth-gate";
 
-const font = Be_Vietnam_Pro({
+const font = Inter({
   variable: "--font-sans",
   subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {

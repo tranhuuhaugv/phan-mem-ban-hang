@@ -43,7 +43,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Topbar />
-      <main className="mx-auto max-w-[1400px] px-4 py-6">{children}</main>
+      <main className="w-full px-4 py-5 md:px-6">{children}</main>
     </>
   );
 }

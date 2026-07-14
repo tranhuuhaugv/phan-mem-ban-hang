@@ -5,7 +5,7 @@ import { Check, X } from "lucide-react";
 import { AccessGuard, BackLink } from "@/components/parts";
 import { PageHeader, Card, Badge } from "@/components/ui";
 import { PERMISSIONS, type MenuKey } from "@/lib/permissions";
-import { NAV } from "@/lib/nav";
+import { MENU_LABEL } from "@/lib/nav";
 import { ROLE_LABEL, type Role } from "@/lib/types";
 
 export default function Page() {
@@ -27,7 +27,7 @@ function Yn({ ok }: { ok: boolean }) {
 }
 
 function Inner() {
-  const menuLabel = (k: MenuKey) => NAV.find((n) => n.key === k)?.label ?? k;
+  const menuLabel = (k: MenuKey) => MENU_LABEL[k] ?? k;
 
   return (
     <div>
