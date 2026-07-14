@@ -6,24 +6,32 @@ import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Boxes,
+  Tags,
+  PackagePlus,
   ShoppingCart,
   Wrench,
   Wallet,
+  ReceiptText,
+  Users,
   Settings,
   Laptop,
   ChevronDown,
   LogOut,
 } from "lucide-react";
-import { NAV, type NavGroup } from "@/lib/nav";
+import { NAV, type NavItem } from "@/lib/nav";
 import { ROLE_LABEL } from "@/lib/types";
 import { useRole } from "./role-context";
 
-const ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+const ICONS: Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
   LayoutDashboard,
   Boxes,
+  Tags,
+  PackagePlus,
   ShoppingCart,
   Wrench,
   Wallet,
+  ReceiptText,
+  Users,
   Settings,
 };
 
@@ -36,11 +44,8 @@ export function Topbar() {
   const [userMenu, setUserMenu] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
 
-  // lọc nhóm + section theo quyền
-  const groups = NAV.map((g) => ({ ...g, sections: g.sections.filter((s) => can(s.key).view) })).filter(
-    (g) => g.sections.length > 0,
-  );
-  const openGroup = groups.find((g) => g.id === open);
+  const items = NAV.filter((n) => can(n.key).view);
+  const openItem = items.find((n) => n.key === open);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -58,30 +63,28 @@ export function Topbar() {
     setUserMenu(false);
   }, [pathname]);
 
-  const isGroupActive = (g: NavGroup) =>
-    g.sections.some((s) => pathname === `/${s.key}` || pathname.startsWith(`/${s.key}/`));
+  const isActive = (n: NavItem) => pathname === n.href || pathname.startsWith(n.href + "/");
 
-  const groupWidth = (g: NavGroup) => (g.sections.length > 1 ? Math.min(g.sections.length * 184, 560) : 232);
-
-  const toggle = (g: NavGroup, e: React.MouseEvent<HTMLButtonElement>) => {
-    if (open === g.id) {
+  const toggle = (n: NavItem, e: React.MouseEvent<HTMLButtonElement>) => {
+    if (n.links.length <= 1) {
+      router.push(n.href);
+      return;
+    }
+    if (open === n.key) {
       setOpen(null);
       return;
     }
     const bar = barRef.current?.getBoundingClientRect();
     const btn = e.currentTarget.getBoundingClientRect();
-    if (bar) {
-      const w = groupWidth(g);
-      setLeft(Math.max(0, Math.min(btn.left - bar.left, bar.width - w - 8)));
-    }
+    if (bar) setLeft(Math.max(0, Math.min(btn.left - bar.left, bar.width - 248)));
     setUserMenu(false);
-    setOpen(g.id);
+    setOpen(n.key);
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--surface)]/80 shadow-sm backdrop-blur-xl">
-      <div ref={barRef} className="relative flex h-14 items-center gap-1 px-4 md:px-6">
-        <Link href="/tong-quan" className="flex items-center gap-2.5 pr-3">
+    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--surface)]/85 shadow-sm backdrop-blur-xl">
+      <div ref={barRef} className="relative flex h-14 items-center gap-1 px-3 md:px-5">
+        <Link href="/tong-quan" className="flex items-center gap-2.5 pr-2">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--purple)] text-white shadow-md-soft">
             <Laptop size={18} />
           </span>
@@ -92,64 +95,62 @@ export function Topbar() {
         </Link>
 
         <nav className="flex flex-1 items-center gap-0.5 overflow-x-auto">
-          {groups.map((g) => {
-            const Icon = ICONS[g.icon] ?? Laptop;
-            const active = isGroupActive(g);
-            const isOpen = open === g.id;
+          {items.map((n) => {
+            const Icon = ICONS[n.icon] ?? Laptop;
+            const active = isActive(n) || open === n.key;
             return (
               <button
-                key={g.id}
-                onClick={(e) => toggle(g, e)}
-                className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-[13px] font-medium ${
-                  active || isOpen
-                    ? "bg-[var(--primary)]/12 text-[var(--primary)]"
-                    : "text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                key={n.key}
+                onClick={(e) => toggle(n, e)}
+                style={active ? { backgroundColor: `${n.color}18`, color: n.color } : undefined}
+                className={`group flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-[13px] font-medium ${
+                  active ? "" : "text-[var(--foreground)] hover:bg-[var(--surface-2)]"
                 }`}
               >
-                <Icon size={16} />
-                <span className="hidden lg:inline">{g.label}</span>
-                <ChevronDown size={13} className={`opacity-60 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                <Icon size={16} className="shrink-0 transition-transform group-hover:scale-110" style={{ color: n.color }} />
+                <span className="hidden lg:inline">{n.label}</span>
+                {n.links.length > 1 && (
+                  <ChevronDown
+                    size={13}
+                    className={`opacity-50 transition-transform ${open === n.key ? "rotate-180" : ""}`}
+                  />
+                )}
               </button>
             );
           })}
         </nav>
 
-        {/* Mega dropdown — render ngoài vùng cuộn để không bị cắt */}
-        {openGroup && (
-          <div
-            className="animate-menu absolute top-full z-50 mt-1.5"
-            style={{ left, width: groupWidth(openGroup) }}
-          >
-            <div className="card shadow-lg-soft flex gap-1 overflow-hidden p-2">
-              {openGroup.sections.map((s) => (
-                <div key={s.key} className="min-w-0 flex-1">
-                  {openGroup.sections.length > 1 && (
-                    <div className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
-                      {s.title}
-                    </div>
-                  )}
-                  {s.links.map((l) => {
-                    const childActive = pathname === l.href;
-                    return (
-                      <Link
-                        key={l.href}
-                        href={l.href}
-                        onClick={() => setOpen(null)}
-                        className={`group flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${
-                          childActive ? "bg-[var(--primary)]/12 text-[var(--primary)]" : "hover:bg-[var(--surface-2)]"
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                            childActive ? "bg-[var(--primary)]" : "bg-[var(--border)] group-hover:bg-[var(--primary)]"
-                          }`}
-                        />
-                        <span className="truncate">{l.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              ))}
+        {/* Dropdown mục con — render ngoài vùng cuộn, bám màu của mục */}
+        {openItem && openItem.links.length > 1 && (
+          <div className="animate-menu absolute top-full z-50 mt-1.5 w-60" style={{ left }}>
+            <div className="card shadow-lg-soft overflow-hidden p-1.5">
+              <div
+                className="mb-0.5 flex items-center gap-1.5 px-2.5 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wide"
+                style={{ color: openItem.color }}
+              >
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: openItem.color }} />
+                {openItem.label}
+              </div>
+              {openItem.links.map((l) => {
+                const childActive = pathname === l.href;
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    onClick={() => setOpen(null)}
+                    style={childActive ? { backgroundColor: `${openItem.color}16`, color: openItem.color } : undefined}
+                    className={`group flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] ${
+                      childActive ? "" : "hover:bg-[var(--surface-2)]"
+                    }`}
+                  >
+                    <span
+                      className="h-1.5 w-1.5 shrink-0 rounded-full transition-colors"
+                      style={{ backgroundColor: childActive ? openItem.color : "var(--border)" }}
+                    />
+                    <span className="truncate">{l.label}</span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
