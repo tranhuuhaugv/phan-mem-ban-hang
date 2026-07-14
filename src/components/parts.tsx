@@ -40,12 +40,22 @@ export function DetailRow({ label, children }: { label: string; children: React.
   );
 }
 
-export function SectionCard({ title, children, action }: { title?: string; children: React.ReactNode; action?: React.ReactNode }) {
+export function SectionCard({
+  title,
+  children,
+  action,
+  className = "",
+}: {
+  title?: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <Card className="p-5">
+    <Card className={`p-4 ${className}`}>
       {title && (
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold">{title}</h2>
+        <div className="mb-2.5 flex items-center justify-between">
+          <h2 className="text-[13px] font-semibold uppercase tracking-wide text-[var(--muted)]">{title}</h2>
           {action}
         </div>
       )}
@@ -64,5 +74,14 @@ export function DemoNote() {
     <p className="mt-4 rounded-lg bg-[var(--warning-bg)] px-3 py-2 text-xs text-[var(--warning)]">
       Bản demo giao diện — dữ liệu chưa lưu vào database (sẽ nối backend ở bước sau).
     </p>
+  );
+}
+
+// Bản gọn 1 dòng, đặt cạnh nút bấm
+export function DemoNoteInline() {
+  return (
+    <span className="hidden text-xs text-[var(--muted)] sm:inline">
+      Bản demo — dữ liệu chưa lưu vào database.
+    </span>
   );
 }
