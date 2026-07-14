@@ -18,7 +18,7 @@ function Inner() {
   const router = useRouter();
   const toast = useToast();
   return (
-    <div className="max-w-3xl">
+    <div>
       <BackLink href="/sua-chua">Về danh sách phiếu</BackLink>
       <PageHeader title="Tạo phiếu sửa chữa" subtitle="Ghi nhận máy gửi sửa: lỗi gì, chi phí dự kiến" />
       <form

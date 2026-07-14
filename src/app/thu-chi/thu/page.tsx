@@ -18,7 +18,7 @@ function Inner() {
   const router = useRouter();
   const toast = useToast();
   return (
-    <div className="max-w-2xl">
+    <div>
       <BackLink href="/thu-chi">Về sổ quỹ</BackLink>
       <PageHeader title="Tạo phiếu thu" subtitle="Ghi nhận khoản tiền thu vào (bán hàng, thu nợ...)" />
       <form

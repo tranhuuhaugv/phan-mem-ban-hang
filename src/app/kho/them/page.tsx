@@ -33,7 +33,7 @@ function Inner() {
   };
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <BackLink href="/kho">Về danh sách kho</BackLink>
       <PageHeader title="Thêm máy mới" subtitle="Nhập thông tin 1 máy vào kho — Số Serial là khoá duy nhất, không trùng" />
 

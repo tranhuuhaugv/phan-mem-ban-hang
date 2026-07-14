@@ -33,7 +33,7 @@ function Inner() {
     : [];
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <BackLink href="/kho">Về danh sách kho</BackLink>
       <PageHeader title="Tra cứu Serial" subtitle="Nhập Số Serial để xem thông tin & lịch sử đầy đủ của 1 máy (dùng khi bảo hành)" />
 
@@ -56,7 +56,7 @@ function Inner() {
       )}
 
       {machine && (
-        <div className="space-y-4">
+        <div className="grid items-start gap-4 lg:grid-cols-2">
           <SectionCard>
             <div className="mb-3 flex items-center gap-3">
               <span className="grid h-10 w-10 place-items-center rounded-lg bg-[var(--primary)]/12 text-[var(--primary)]">

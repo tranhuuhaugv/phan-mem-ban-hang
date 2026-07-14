@@ -31,7 +31,7 @@ function Inner({ id }: { id: string }) {
   const remain = order.sellPrice - order.deposit;
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <BackLink href="/dat-hang">Về danh sách đơn</BackLink>
       <PageHeader
         title={`Đơn ${order.code}`}
@@ -43,7 +43,7 @@ function Inner({ id }: { id: string }) {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <SectionCard title="Khách hàng">
           <DetailRow label="Tên">{order.customerName}</DetailRow>
           <DetailRow label="SĐT">{order.phone}</DetailRow>
@@ -63,9 +63,7 @@ function Inner({ id }: { id: string }) {
             </DetailRow>
           )}
         </SectionCard>
-      </div>
 
-      <div className="mt-4">
         <SectionCard title="Thanh toán">
           <DetailRow label="Giá bán">{formatVND(order.sellPrice)}</DetailRow>
           <DetailRow label="Đã cọc">{formatVND(order.deposit)}</DetailRow>

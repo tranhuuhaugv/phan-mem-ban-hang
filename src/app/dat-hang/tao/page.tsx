@@ -25,7 +25,7 @@ function Inner() {
   const picked = available.find((m) => m.serial === serial);
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <BackLink href="/dat-hang">Về danh sách đơn</BackLink>
       <PageHeader title="Tạo đơn đặt hàng" subtitle="Chỉ chọn được máy đang Tồn kho — gán Serial để không bán trùng" />
       <form

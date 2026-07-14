@@ -31,7 +31,7 @@ function Inner({ id }: { id: string }) {
   const warranty = warranties.find((w) => w.invoiceCode === iv.code);
 
   return (
-    <div className="max-w-3xl">
+    <div className="mx-auto max-w-4xl">
       <div className="print:hidden">
         <BackLink href="/hoa-don">Về danh sách hoá đơn</BackLink>
         <PageHeader

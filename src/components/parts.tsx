@@ -55,7 +55,7 @@ export function SectionCard({ title, children, action }: { title?: string; child
 }
 
 export function FormGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>;
+  return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">{children}</div>;
 }
 
 // Demo: chưa có backend nên form chỉ báo thành công

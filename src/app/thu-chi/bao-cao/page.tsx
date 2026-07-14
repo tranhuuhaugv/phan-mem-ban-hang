@@ -34,7 +34,7 @@ function Inner() {
   ];
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <BackLink href="/thu-chi">Về sổ quỹ</BackLink>
       <PageHeader title="Báo cáo lãi/lỗ" subtitle="Tổng hợp tự động từ Kho + Đặt hàng + Thu-Chi (kỳ tháng 7/2026)" />
 

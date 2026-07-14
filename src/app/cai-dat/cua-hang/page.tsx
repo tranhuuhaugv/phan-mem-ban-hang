@@ -16,7 +16,7 @@ export default function Page() {
 function Inner() {
   const toast = useToast();
   return (
-    <div className="max-w-3xl">
+    <div>
       <BackLink href="/cai-dat">Về cài đặt</BackLink>
       <PageHeader title="Cấu hình cửa hàng" subtitle="Thông tin hiển thị trên hoá đơn & mẫu in" />
       <form

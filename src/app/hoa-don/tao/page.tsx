@@ -24,7 +24,7 @@ function Inner() {
   const sellable = orders.filter((o) => o.status !== "huy");
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <BackLink href="/hoa-don">Về danh sách hoá đơn</BackLink>
       <PageHeader title="Tạo hoá đơn" subtitle="Chọn đơn bán đã có để lập hoá đơn" />
       <form
