@@ -45,13 +45,13 @@ export function Button({
   className?: string;
 }) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap";
+    "inline-flex items-center justify-center gap-2 rounded-lg font-medium disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap active:scale-[0.98]";
   const sizes = { sm: "h-8 px-3 text-sm", md: "h-9.5 px-4 text-sm" };
   const variants = {
-    primary: "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]",
-    outline: "border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-2)]",
+    primary: "bg-[var(--primary)] text-white shadow-sm hover:bg-[var(--primary-hover)] hover:shadow-md-soft",
+    outline: "border border-[var(--border)] bg-[var(--surface)] shadow-sm hover:bg-[var(--surface-2)] hover:border-[var(--primary)]/40",
     ghost: "hover:bg-[var(--surface-2)]",
-    danger: "bg-[var(--danger)] text-white hover:opacity-90",
+    danger: "bg-[var(--danger)] text-white shadow-sm hover:opacity-90 hover:shadow-md-soft",
   };
   const cls = `${base} ${sizes[size]} ${variants[variant]} ${className}`;
   if (href)

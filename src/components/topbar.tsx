@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Boxes,
@@ -40,21 +40,40 @@ export function Topbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { role, user, logout, can } = useRole();
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(null); // menu key đang mở
   const [userMenu, setUserMenu] = useState(false);
+  const barRef = useRef<HTMLDivElement>(null);
 
   const visible = NAV.filter((n) => can(n.key).view);
 
+  // Đóng mọi dropdown khi bấm ra ngoài
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (barRef.current && !barRef.current.contains(e.target as Node)) {
+        setOpen(null);
+        setUserMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  // Đóng dropdown khi đổi trang
+  useEffect(() => {
+    setOpen(null);
+    setUserMenu(false);
+  }, [pathname]);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--surface)]/85 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-2 px-4">
-        <Link href="/tong-quan" className="flex items-center gap-2 pr-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--primary)] text-white">
-            <Laptop size={18} />
+    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--surface)]/80 shadow-sm backdrop-blur-xl">
+      <div ref={barRef} className="mx-auto flex h-15 max-w-[1400px] items-center gap-1 px-4">
+        <Link href="/tong-quan" className="flex items-center gap-2.5 pr-3">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--purple)] text-white shadow-md-soft">
+            <Laptop size={19} />
           </span>
-          <span className="hidden text-sm font-semibold leading-tight sm:block">
-            Kho Laptop
-            <span className="block text-[11px] font-normal text-[var(--muted)]">Quản lý nội bộ</span>
+          <span className="hidden leading-tight sm:block">
+            <span className="block text-sm font-bold tracking-tight">Kho Laptop</span>
+            <span className="block text-[11px] text-[var(--muted)]">Quản lý nội bộ</span>
           </span>
         </Link>
 
@@ -62,38 +81,60 @@ export function Topbar() {
           {visible.map((item) => {
             const Icon = ICONS[item.icon] ?? Laptop;
             const active = pathname === item.href || pathname.startsWith(item.href + "/");
+            const hasMenu = item.children.length > 1;
+            const isOpen = open === item.key;
+
             return (
-              <div
-                key={item.key}
-                className="relative"
-                onMouseEnter={() => setOpen(item.key)}
-                onMouseLeave={() => setOpen(null)}
-              >
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
-                    active
+              <div key={item.key} className="relative">
+                <button
+                  onClick={() => {
+                    if (hasMenu) {
+                      setOpen(isOpen ? null : item.key);
+                    } else {
+                      router.push(item.href);
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium ${
+                    active || isOpen
                       ? "bg-[var(--primary)]/12 text-[var(--primary)]"
                       : "text-[var(--foreground)] hover:bg-[var(--surface-2)]"
                   }`}
                 >
                   <Icon size={16} />
                   <span className="hidden lg:inline">{item.label}</span>
-                  {item.children.length > 1 && <ChevronDown size={13} className="opacity-60" />}
-                </Link>
+                  {hasMenu && (
+                    <ChevronDown size={13} className={`opacity-60 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                  )}
+                </button>
 
-                {open === item.key && item.children.length > 1 && (
-                  <div className="absolute left-0 top-full w-56 pt-1">
-                    <div className="card overflow-hidden py-1 shadow-lg">
-                      {item.children.map((c) => (
-                        <Link
-                          key={c.href}
-                          href={c.href}
-                          className="block px-3 py-2 text-sm hover:bg-[var(--surface-2)]"
-                        >
-                          {c.label}
-                        </Link>
-                      ))}
+                {hasMenu && isOpen && (
+                  <div className="animate-menu absolute left-0 top-full z-50 w-60 pt-2">
+                    <div className="card shadow-lg-soft overflow-hidden p-1.5">
+                      <div className="px-2.5 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                        {item.label}
+                      </div>
+                      {item.children.map((c) => {
+                        const childActive = pathname === c.href;
+                        return (
+                          <Link
+                            key={c.href}
+                            href={c.href}
+                            onClick={() => setOpen(null)}
+                            className={`group flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm ${
+                              childActive
+                                ? "bg-[var(--primary)]/12 text-[var(--primary)]"
+                                : "hover:bg-[var(--surface-2)]"
+                            }`}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                childActive ? "bg-[var(--primary)]" : "bg-[var(--border)] group-hover:bg-[var(--primary)]"
+                              }`}
+                            />
+                            {c.label}
+                          </Link>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -103,32 +144,41 @@ export function Topbar() {
         </nav>
 
         {/* Người dùng đăng nhập + đăng xuất */}
-        <div className="relative" onMouseLeave={() => setUserMenu(false)}>
+        <div className="relative shrink-0">
           <button
             onClick={() => setUserMenu((v) => !v)}
-            className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-[var(--surface-2)]"
+            className={`flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm ${
+              userMenu ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]"
+            }`}
           >
-            <UserCircle2 size={24} className="text-[var(--muted)]" />
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--purple)] text-xs font-semibold text-white">
+              {(user?.fullName ?? "?").charAt(0)}
+            </span>
             <span className="hidden text-left leading-tight sm:block">
               <span className="block text-sm font-medium">{user?.fullName ?? "Người dùng"}</span>
               <span className="block text-[11px] text-[var(--muted)]">{ROLE_LABEL[role]}</span>
             </span>
-            <ChevronDown size={14} className="opacity-60" />
+            <ChevronDown size={14} className={`opacity-60 transition-transform ${userMenu ? "rotate-180" : ""}`} />
           </button>
 
           {userMenu && (
-            <div className="absolute right-0 top-full w-52 pt-1">
-              <div className="card overflow-hidden py-1 shadow-lg">
-                <div className="border-b border-[var(--border)] px-3 py-2">
-                  <div className="text-sm font-medium">{user?.fullName}</div>
-                  <div className="font-mono text-xs text-[var(--muted)]">@{user?.username}</div>
+            <div className="animate-menu absolute right-0 top-full z-50 w-56 pt-2">
+              <div className="card shadow-lg-soft overflow-hidden p-1.5">
+                <div className="mb-1 flex items-center gap-2.5 border-b border-[var(--border)] px-2.5 pb-2.5 pt-1.5">
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--purple)] text-sm font-semibold text-white">
+                    {(user?.fullName ?? "?").charAt(0)}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">{user?.fullName}</div>
+                    <div className="truncate font-mono text-xs text-[var(--muted)]">@{user?.username}</div>
+                  </div>
                 </div>
                 <button
                   onClick={() => {
                     logout();
                     router.replace("/login");
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--danger)] hover:bg-[var(--surface-2)]"
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-[var(--danger)] hover:bg-[var(--danger-bg)]"
                 >
                   <LogOut size={15} /> Đăng xuất
                 </button>

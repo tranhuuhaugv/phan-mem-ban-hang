@@ -33,14 +33,14 @@ function Stat({
   hint?: string;
 }) {
   return (
-    <Card className="p-4">
+    <Card className="p-4 transition-all hover:-translate-y-0.5 hover:shadow-md-soft">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-[var(--muted)]">{label}</p>
           <p className="mt-1 text-2xl font-semibold tracking-tight">{value}</p>
           {hint && <p className="mt-1 text-xs text-[var(--muted)]">{hint}</p>}
         </div>
-        <span className="grid h-10 w-10 place-items-center rounded-lg" style={{ background: tone + "1f", color: tone }}>
+        <span className="grid h-11 w-11 place-items-center rounded-xl" style={{ background: tone + "1f", color: tone }}>
           {icon}
         </span>
       </div>
