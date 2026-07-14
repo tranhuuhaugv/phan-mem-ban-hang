@@ -127,6 +127,30 @@ export function buildMachineHistory(serial: string): HistoryEvent[] {
   return ev.sort((a, b) => a.at.localeCompare(b.at));
 }
 
+// ===== Số liệu theo 1 kỳ: prefix "YYYY-MM-DD" (ngày) / "YYYY-MM" (tháng) / "YYYY" (năm) =====
+export function periodStats(prefix: string) {
+  const on = (iso?: string) => !!iso && iso.startsWith(prefix);
+  const thu = cashFlows.filter((c) => c.type === "thu" && on(c.date)).reduce((s, c) => s + c.amount, 0);
+  const chi = cashFlows.filter((c) => c.type === "chi" && on(c.date)).reduce((s, c) => s + c.amount, 0);
+  return {
+    thu,
+    chi,
+    profit: thu - chi,
+    ordersCount: orders.filter((o) => on(o.date)).length,
+    orderValue: orders.filter((o) => on(o.date)).reduce((s, o) => s + o.sellPrice, 0),
+    machinesIn: machines.filter((m) => on(m.createdAt)).length,
+    buyCount: buyReceipts.filter((b) => on(b.date)).length,
+    repairCount: repairs.filter((r) => on(r.receiveDate)).length,
+    invoiceCount: invoices.filter((iv) => on(iv.date)).length,
+  };
+}
+
+// Ngày gần nhất có phát sinh dữ liệu (để mở mặc định trên Dashboard)
+export const latestActivityDay = [...cashFlows, ...orders]
+  .map((x) => x.date.slice(0, 10))
+  .sort()
+  .reverse()[0];
+
 // ===== Số liệu tổng hợp cho Dashboard =====
 export const dashboardStats = {
   revenueToday: 400000,

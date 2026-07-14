@@ -11,11 +11,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Boxes, TrendingUp, PackagePlus, DollarSign } from "lucide-react";
-import { Card, PageHeader, Badge } from "@/components/ui";
+import { useMemo, useState } from "react";
+import { Boxes, TrendingUp, PackagePlus, DollarSign, CalendarDays } from "lucide-react";
+import { Card, PageHeader, Badge, Input, Select } from "@/components/ui";
 import { useRole } from "@/components/role-context";
-import { dashboardStats as s, revenueSeries, buyReceipts, orders, repairs } from "@/lib/mock-data";
-import { formatVND, formatVNDShort } from "@/lib/format";
+import { dashboardStats as s, revenueSeries, buyReceipts, orders, repairs, periodStats, latestActivityDay } from "@/lib/mock-data";
+import { formatVND, formatVNDShort, formatDate } from "@/lib/format";
 import { BuyStatusBadge, OrderStatusBadge, RepairStatusBadge } from "@/components/status";
 import Link from "next/link";
 
@@ -48,13 +49,93 @@ function Stat({
   );
 }
 
+function DayTile({ label, value, tone }: { label: string; value: string; tone: string }) {
+  return (
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-3">
+      <p className="text-xs text-[var(--muted)]">{label}</p>
+      <p className="mt-0.5 text-lg font-semibold tracking-tight" style={{ color: tone }}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+type PeriodMode = "day" | "month" | "year";
+
 export default function DashboardPage() {
   const { can } = useRole();
   const seeProfit = can("tong-quan").seeProfit;
 
+  const [mode, setMode] = useState<PeriodMode>("day");
+  const [day, setDay] = useState(latestActivityDay); // YYYY-MM-DD
+  const [month, setMonth] = useState(latestActivityDay.slice(0, 7)); // YYYY-MM
+  const [year, setYear] = useState(latestActivityDay.slice(0, 4)); // YYYY
+
+  const prefix = mode === "day" ? day : mode === "month" ? month : year;
+  const d = useMemo(() => periodStats(prefix), [prefix]);
+
+  const periodLabel =
+    mode === "day" ? formatDate(day) : mode === "month" ? `Tháng ${month.slice(5)}/${month.slice(0, 4)}` : `Năm ${year}`;
+
+  const pill = (active: boolean) =>
+    `rounded-md px-3 py-1 text-[13px] font-medium transition-colors ${
+      active ? "bg-[var(--primary)] text-white shadow-sm" : "text-[var(--muted)] hover:text-[var(--foreground)]"
+    }`;
+
   return (
     <div>
-      <PageHeader title="Tổng quan" subtitle="Thống kê nhanh tình hình kinh doanh hôm nay" />
+      <PageHeader title="Tổng quan" subtitle="Thống kê nhanh tình hình kinh doanh" />
+
+      {/* Số liệu theo kỳ (ngày / tháng / năm) */}
+      <Card className="mb-4 p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--primary)]/12 text-[var(--primary)]">
+              <CalendarDays size={17} />
+            </span>
+            <div>
+              <h2 className="font-semibold leading-tight">Số liệu theo kỳ</h2>
+              <p className="text-xs text-[var(--muted)]">Số liệu phát sinh trong · {periodLabel}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5">
+              <button type="button" onClick={() => setMode("day")} className={pill(mode === "day")}>
+                Ngày
+              </button>
+              <button type="button" onClick={() => setMode("month")} className={pill(mode === "month")}>
+                Tháng
+              </button>
+              <button type="button" onClick={() => setMode("year")} className={pill(mode === "year")}>
+                Năm
+              </button>
+            </div>
+            {mode === "day" && <Input type="date" value={day} onChange={(e) => setDay(e.target.value)} className="w-44" />}
+            {mode === "month" && (
+              <Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="w-40" />
+            )}
+            {mode === "year" && (
+              <Select value={year} onChange={(e) => setYear(e.target.value)} className="w-28">
+                {["2024", "2025", "2026", "2027"].map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <DayTile label="Doanh thu" value={formatVND(d.thu)} tone="#16a34a" />
+          {seeProfit && <DayTile label="Chi phí" value={formatVND(d.chi)} tone="#dc2626" />}
+          {seeProfit && <DayTile label="Lợi nhuận" value={formatVND(d.profit)} tone="#2563eb" />}
+          <DayTile label="Đơn hàng mới" value={`${d.ordersCount}`} tone="#059669" />
+          <DayTile label="Máy nhập kho" value={`${d.machinesIn}`} tone="#4f46e5" />
+          <DayTile label="Phiếu thu máy" value={`${d.buyCount}`} tone="#0891b2" />
+          <DayTile label="Phiếu sửa chữa" value={`${d.repairCount}`} tone="#ea580c" />
+          <DayTile label="Hoá đơn" value={`${d.invoiceCount}`} tone="#db2777" />
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
