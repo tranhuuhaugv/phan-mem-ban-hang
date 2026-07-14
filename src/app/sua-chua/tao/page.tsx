@@ -32,7 +32,7 @@ function Inner() {
         <SectionCard title="Máy & lỗi">
           <FormGrid>
             <Field label="Mã SP" hint="Máy trong kho hoặc máy khách mang tới">
-              <Input placeholder="VD: AS-VIVO-4402" required />
+              <Input placeholder="VD: SP0004" required />
             </Field>
             <Field label="Model">
               <Input placeholder="VD: Asus Vivobook 15" />

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { AccessGuard, FormGrid } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, Badge, Field, Input, Select } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, Badge, Field, Input, Select, SearchInput } from "@/components/ui";
 import { Modal, ConfirmDialog } from "@/components/modal";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
@@ -24,7 +24,11 @@ function Inner() {
   const toast = useToast();
   const [openForm, setOpenForm] = useState(false);
   const [delId, setDelId] = useState<string | null>(null);
+  const [q, setQ] = useState("");
   const target = categories.find((c) => c.id === delId);
+  const rows = categories.filter((c) =>
+    `${c.brand} ${c.model} ${c.cpu} ${c.ram} ${c.storage}`.toLowerCase().includes(q.trim().toLowerCase()),
+  );
 
   return (
     <div>
@@ -40,8 +44,12 @@ function Inner() {
         }
       />
 
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <SearchInput value={q} onChange={setQ} placeholder="Tìm hãng, model, cấu hình..." />
+      </div>
+
       <Table head={["Hãng", "Model", "Cấu hình", "Loại", "Số máy đang dùng", ""]}>
-        {categories.map((c) => (
+        {rows.map((c) => (
           <Tr key={c.id}>
             <Td className="font-medium">{c.brand}</Td>
             <Td>{c.model}</Td>

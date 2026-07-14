@@ -9,7 +9,7 @@ import { Modal } from "@/components/modal";
 import { useToast } from "@/components/toast";
 import { accounts } from "@/lib/mock-data";
 import { ROLE_LABEL, type Role } from "@/lib/types";
-import { formatDate } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 
 export default function Page() {
   return (
@@ -68,7 +68,7 @@ function Inner() {
             <Td>
               <Badge tone={a.status === "active" ? "success" : "danger"}>{a.status === "active" ? "Hoạt động" : "Đã khoá"}</Badge>
             </Td>
-            <Td className="whitespace-nowrap text-[var(--muted)]">{a.lastLogin ? formatDate(a.lastLogin) : "—"}</Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{a.lastLogin ? formatDateTime(a.lastLogin) : "—"}</Td>
             <Td>
               <div className="flex items-center justify-end gap-1">
                 <Button size="sm" variant="ghost" onClick={() => toast("Đã đặt lại mật khẩu (demo)")}>

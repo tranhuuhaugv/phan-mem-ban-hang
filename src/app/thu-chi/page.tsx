@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { ArrowDownCircle, ArrowUpCircle, FileBarChart } from "lucide-react";
 import { AccessGuard } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, Card, Badge, Select } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, Card, Badge, Select, SearchInput } from "@/components/ui";
 import { cashFlows } from "@/lib/mock-data";
-import { formatVND, formatDate } from "@/lib/format";
+import { formatVND, formatDateTime } from "@/lib/format";
 import type { CashType } from "@/lib/types";
 
 export default function Page() {
@@ -18,9 +18,15 @@ export default function Page() {
 
 function Inner() {
   const [filter, setFilter] = useState<CashType | "all">("all");
+  const [q, setQ] = useState("");
   const totalThu = cashFlows.filter((c) => c.type === "thu").reduce((s, c) => s + c.amount, 0);
   const totalChi = cashFlows.filter((c) => c.type === "chi").reduce((s, c) => s + c.amount, 0);
-  const rows = [...cashFlows].filter((c) => filter === "all" || c.type === filter).sort((a, b) => b.date.localeCompare(a.date));
+  const rows = [...cashFlows]
+    .filter((c) => filter === "all" || c.type === filter)
+    .filter((c) =>
+      `${c.code} ${c.content} ${c.category} ${c.partner ?? ""}`.toLowerCase().includes(q.trim().toLowerCase()),
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div>
@@ -57,7 +63,8 @@ function Inner() {
         </Card>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, nội dung, phân loại, đối tác..." />
         <Select value={filter} onChange={(e) => setFilter(e.target.value as CashType | "all")} className="w-44">
           <option value="all">Tất cả</option>
           <option value="thu">Chỉ phiếu thu</option>
@@ -69,7 +76,7 @@ function Inner() {
         {rows.map((c) => (
           <Tr key={c.id}>
             <Td className="font-mono text-xs font-medium">{c.code}</Td>
-            <Td className="whitespace-nowrap text-[var(--muted)]">{formatDate(c.date)}</Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDateTime(c.date)}</Td>
             <Td>
               <Badge tone={c.type === "thu" ? "success" : "danger"}>{c.type === "thu" ? "Thu" : "Chi"}</Badge>
             </Td>

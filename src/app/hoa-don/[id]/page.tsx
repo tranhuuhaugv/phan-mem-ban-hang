@@ -5,7 +5,7 @@ import { Printer, ShieldCheck } from "lucide-react";
 import { AccessGuard, BackLink } from "@/components/parts";
 import { Button, PageHeader, Card } from "@/components/ui";
 import { invoices, orders, machines, warranties } from "@/lib/mock-data";
-import { formatVND, formatDate } from "@/lib/format";
+import { formatVND, formatDate, formatDateTime } from "@/lib/format";
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -55,7 +55,7 @@ function Inner({ id }: { id: string }) {
           <div className="text-right">
             <div className="text-lg font-bold">HOÁ ĐƠN BÁN HÀNG</div>
             <div className="font-mono text-sm text-[var(--muted)]">{iv.code}</div>
-            <div className="text-sm text-[var(--muted)]">Ngày {formatDate(iv.date)}</div>
+            <div className="text-sm text-[var(--muted)]">Ngày lập {formatDateTime(iv.date)}</div>
           </div>
         </div>
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Search } from "lucide-react";
 import type { ReactNode } from "react";
 
 type Tone = "primary" | "success" | "warning" | "danger" | "info" | "purple" | "muted";
@@ -135,6 +136,30 @@ const inputCls =
 
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${inputCls} ${props.className ?? ""}`} />;
+}
+
+export function SearchInput({
+  value,
+  onChange,
+  placeholder = "Tìm kiếm...",
+  className = "",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  return (
+    <div className={`relative min-w-[200px] flex-1 ${className}`}>
+      <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`${inputCls} pl-9`}
+      />
+    </div>
+  );
 }
 
 export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {

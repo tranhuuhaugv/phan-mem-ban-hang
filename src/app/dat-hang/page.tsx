@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { AccessGuard } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, Select } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, Select, SearchInput } from "@/components/ui";
 import { OrderStatusBadge } from "@/components/status";
 import { useRole } from "@/components/role-context";
 import { orders } from "@/lib/mock-data";
 import { ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/types";
-import { formatVND, formatDate } from "@/lib/format";
+import { formatVND, formatDateTime } from "@/lib/format";
 import Link from "next/link";
 
 export default function Page() {
@@ -22,7 +22,11 @@ export default function Page() {
 function Inner() {
   const { can } = useRole();
   const [status, setStatus] = useState<OrderStatus | "all">("all");
-  const rows = orders.filter((o) => status === "all" || o.status === status);
+  const [q, setQ] = useState("");
+  const rows = orders.filter((o) => {
+    if (status !== "all" && o.status !== status) return false;
+    return `${o.code} ${o.customerName} ${o.phone} ${o.serial} ${o.model}`.toLowerCase().includes(q.trim().toLowerCase());
+  });
 
   return (
     <div>
@@ -38,7 +42,8 @@ function Inner() {
         }
       />
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã đơn, khách hàng, SĐT, Mã SP..." />
         <Select value={status} onChange={(e) => setStatus(e.target.value as OrderStatus | "all")} className="w-52">
           <option value="all">Tất cả trạng thái</option>
           {Object.entries(ORDER_STATUS_LABEL).map(([k, v]) => (
@@ -67,7 +72,7 @@ function Inner() {
             </Td>
             <Td className="whitespace-nowrap font-medium">{formatVND(o.sellPrice)}</Td>
             <Td className="whitespace-nowrap text-[var(--muted)]">{formatVND(o.deposit)}</Td>
-            <Td className="whitespace-nowrap text-[var(--muted)]">{formatDate(o.date)}</Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDateTime(o.date)}</Td>
             <Td>
               <OrderStatusBadge status={o.status} />
             </Td>

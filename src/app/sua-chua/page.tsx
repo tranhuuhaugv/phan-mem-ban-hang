@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { Plus, Eye } from "lucide-react";
 import { AccessGuard, DetailRow } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, Select } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, Select, SearchInput } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { RepairStatusBadge } from "@/components/status";
 import { useRole } from "@/components/role-context";
 import { repairs } from "@/lib/mock-data";
 import { REPAIR_STATUS_LABEL, type Repair, type RepairStatus } from "@/lib/types";
-import { formatVND, formatDate } from "@/lib/format";
+import { formatVND, formatDateTime } from "@/lib/format";
 
 export default function Page() {
   return (
@@ -23,7 +23,13 @@ function Inner() {
   const { can } = useRole();
   const [status, setStatus] = useState<RepairStatus | "all">("all");
   const [view, setView] = useState<Repair | null>(null);
-  const rows = repairs.filter((r) => status === "all" || r.status === status);
+  const [q, setQ] = useState("");
+  const rows = repairs.filter((r) => {
+    if (status !== "all" && r.status !== status) return false;
+    return `${r.code} ${r.serial} ${r.model} ${r.errorDesc} ${r.technician ?? ""}`
+      .toLowerCase()
+      .includes(q.trim().toLowerCase());
+  });
 
   return (
     <div>
@@ -39,7 +45,8 @@ function Inner() {
         }
       />
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, Mã SP, model, lỗi, KTV..." />
         <Select value={status} onChange={(e) => setStatus(e.target.value as RepairStatus | "all")} className="w-52">
           <option value="all">Tất cả trạng thái</option>
           {Object.entries(REPAIR_STATUS_LABEL).map(([k, v]) => (
@@ -60,7 +67,7 @@ function Inner() {
             </Td>
             <Td className="max-w-[220px] text-xs text-[var(--muted)]">{r.errorDesc}</Td>
             <Td className="whitespace-nowrap">{formatVND(r.estCost)}</Td>
-            <Td className="whitespace-nowrap text-[var(--muted)]">{formatDate(r.receiveDate)}</Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDateTime(r.receiveDate)}</Td>
             <Td>
               <RepairStatusBadge status={r.status} />
             </Td>
@@ -86,8 +93,8 @@ function Inner() {
             <DetailRow label="Kỹ thuật viên">{view.technician ?? "Chưa phân"}</DetailRow>
             <DetailRow label="Chi phí dự kiến">{formatVND(view.estCost)}</DetailRow>
             <DetailRow label="Chi phí thực tế">{view.actualCost ? formatVND(view.actualCost) : "—"}</DetailRow>
-            <DetailRow label="Ngày nhận">{formatDate(view.receiveDate)}</DetailRow>
-            <DetailRow label="Ngày trả">{view.returnDate ? formatDate(view.returnDate) : "—"}</DetailRow>
+            <DetailRow label="Ngày nhận">{formatDateTime(view.receiveDate)}</DetailRow>
+            <DetailRow label="Ngày trả">{view.returnDate ? formatDateTime(view.returnDate) : "—"}</DetailRow>
             <DetailRow label="Trạng thái">
               <RepairStatusBadge status={view.status} />
             </DetailRow>

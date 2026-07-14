@@ -5,7 +5,7 @@ import { AccessGuard, BackLink, DetailRow, SectionCard } from "@/components/part
 import { PageHeader, Card, Button } from "@/components/ui";
 import { OrderStatusBadge } from "@/components/status";
 import { orders, machines } from "@/lib/mock-data";
-import { formatVND, formatDate } from "@/lib/format";
+import { formatVND, formatDateTime } from "@/lib/format";
 import { ReceiptText } from "lucide-react";
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
@@ -35,7 +35,7 @@ function Inner({ id }: { id: string }) {
       <BackLink href="/dat-hang">Về danh sách đơn</BackLink>
       <PageHeader
         title={`Đơn ${order.code}`}
-        subtitle={`Tạo ngày ${formatDate(order.date)}`}
+        subtitle={`Tạo lúc ${formatDateTime(order.date)}`}
         actions={
           <Button variant="outline" href="/hoa-don/tao">
             <ReceiptText size={16} /> Xuất hoá đơn

@@ -6,7 +6,7 @@ import { Save, FileText, PackageOpen, Plus, Trash2, Search } from "lucide-react"
 import { AccessGuard, BackLink, SectionCard, DemoNoteInline } from "@/components/parts";
 import { Button, PageHeader, Field, Input, Select, Textarea } from "@/components/ui";
 import { useToast } from "@/components/toast";
-import { orders, machines } from "@/lib/mock-data";
+import { orders, machines, machineText } from "@/lib/mock-data";
 import { formatVND } from "@/lib/format";
 
 interface LineItem {
@@ -38,9 +38,7 @@ function Inner() {
   const total = items.reduce((s, i) => s + i.price, 0);
 
   const matches = query.trim()
-    ? available
-        .filter((m) => `${m.serial} ${m.brand} ${m.model} ${m.cpu}`.toLowerCase().includes(query.trim().toLowerCase()))
-        .slice(0, 6)
+    ? available.filter((m) => machineText(m).includes(query.trim().toLowerCase())).slice(0, 6)
     : [];
 
   const addMachine = (serial: string) => {
@@ -151,7 +149,7 @@ function Inner() {
                     <Input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Nhập mã máy, VD: DL5420 hoặc HP840..."
+                      placeholder="Gõ mã, tên hoặc cấu hình, VD: SP0001, Dell, 16GB..."
                       className="pl-9"
                     />
                   </div>

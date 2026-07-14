@@ -42,7 +42,7 @@ function Inner() {
           <SectionCard title="Định danh máy">
             <div className="space-y-3">
               <Field label="Mã SP *" hint="Không được trùng máy đã có">
-                <Input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="VD: DL5420-A1001" />
+                <Input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="VD: SP0001" />
               </Field>
               <Field label="Chọn nhanh từ danh mục" hint="Tự điền cấu hình chuẩn">
                 <Select defaultValue="">

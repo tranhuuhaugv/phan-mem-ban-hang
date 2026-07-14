@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { Plus, CheckCircle2, Eye } from "lucide-react";
 import { AccessGuard, DetailRow } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, Field, Input } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, Field, Input, Select, SearchInput } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { BuyStatusBadge } from "@/components/status";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
 import { buyReceipts } from "@/lib/mock-data";
-import { formatVND, formatDate } from "@/lib/format";
-import type { BuyReceipt } from "@/lib/types";
+import { formatVND, formatDateTime } from "@/lib/format";
+import { BUY_STATUS_LABEL, type BuyReceipt, type BuyReceiptStatus } from "@/lib/types";
 
 export default function Page() {
   return (
@@ -26,6 +26,14 @@ function Inner() {
   const toast = useToast();
   const [approve, setApprove] = useState<BuyReceipt | null>(null);
   const [serial, setSerial] = useState("");
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState<BuyReceiptStatus | "all">("all");
+  const rows = buyReceipts.filter((b) => {
+    if (status !== "all" && b.status !== status) return false;
+    return `${b.code} ${b.customerName} ${b.phone} ${b.model} ${b.config}`
+      .toLowerCase()
+      .includes(q.trim().toLowerCase());
+  });
 
   return (
     <div>
@@ -41,8 +49,20 @@ function Inner() {
         }
       />
 
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, khách hàng, SĐT, model..." />
+        <Select value={status} onChange={(e) => setStatus(e.target.value as BuyReceiptStatus | "all")} className="w-48">
+          <option value="all">Tất cả trạng thái</option>
+          {Object.entries(BUY_STATUS_LABEL).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </Select>
+      </div>
+
       <Table head={["Mã phiếu", "Khách hàng", "Máy", "Giá thu", "Ngày", "Trạng thái", ""]}>
-        {buyReceipts.map((b) => (
+        {rows.map((b) => (
           <Tr key={b.id}>
             <Td className="font-mono text-xs font-medium">{b.code}</Td>
             <Td>
@@ -54,7 +74,7 @@ function Inner() {
               <div className="text-xs text-[var(--muted)]">{b.config}</div>
             </Td>
             <Td className="whitespace-nowrap font-medium">{formatVND(b.price)}</Td>
-            <Td className="whitespace-nowrap text-[var(--muted)]">{formatDate(b.date)}</Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDateTime(b.date)}</Td>
             <Td>
               <BuyStatusBadge status={b.status} />
             </Td>
@@ -116,7 +136,7 @@ function Inner() {
             <DetailRow label="Giá thu">{formatVND(approve.price)}</DetailRow>
             <div className="mt-4">
               <Field label="Gán Mã SP cho máy *" hint="Duyệt phiếu = xác nhận chi tiền và tạo máy mới trong kho">
-                <Input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="VD: HP840-G8-2210" />
+                <Input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="VD: SP0009" />
               </Field>
             </div>
           </div>
