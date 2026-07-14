@@ -31,7 +31,7 @@ function Inner() {
       >
         <SectionCard title="Máy & lỗi">
           <FormGrid>
-            <Field label="Số Serial" hint="Máy trong kho hoặc máy khách mang tới">
+            <Field label="Mã SP" hint="Máy trong kho hoặc máy khách mang tới">
               <Input placeholder="VD: AS-VIVO-4402" required />
             </Field>
             <Field label="Model">

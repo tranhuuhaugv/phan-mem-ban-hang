@@ -54,7 +54,7 @@ function Inner({ id }: { id: string }) {
 
         <SectionCard title="Máy bán">
           <DetailRow label="Model">{order.model}</DetailRow>
-          <DetailRow label="Serial">
+          <DetailRow label="Mã SP">
             <span className="font-mono">{order.serial || "chưa gán"}</span>
           </DetailRow>
           {machine && (

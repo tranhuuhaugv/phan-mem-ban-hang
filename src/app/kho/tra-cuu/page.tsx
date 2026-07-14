@@ -35,7 +35,7 @@ function Inner() {
   return (
     <div>
       <BackLink href="/kho">Về danh sách kho</BackLink>
-      <PageHeader title="Tra cứu Serial" subtitle="Nhập Số Serial để xem thông tin & lịch sử đầy đủ của 1 máy (dùng khi bảo hành)" />
+      <PageHeader title="Tra cứu Mã SP" subtitle="Nhập Mã SP để xem thông tin & lịch sử đầy đủ của 1 máy (dùng khi bảo hành)" />
 
       <form
         onSubmit={(e) => {
@@ -46,13 +46,13 @@ function Inner() {
       >
         <div className="relative flex-1">
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nhập chính xác Số Serial, VD: DL5420-A1001" className="pl-9" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nhập chính xác Mã SP, VD: DL5420-A1001" className="pl-9" />
         </div>
         <Button type="submit">Tra cứu</Button>
       </form>
 
       {searched && !machine && (
-        <Card className="p-8 text-center text-sm text-[var(--muted)]">Không tìm thấy máy với Serial này.</Card>
+        <Card className="p-8 text-center text-sm text-[var(--muted)]">Không tìm thấy máy với Mã SP này.</Card>
       )}
 
       {machine && (

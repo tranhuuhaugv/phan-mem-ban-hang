@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, FileText, PackageOpen, Plus, Trash2 } from "lucide-react";
+import { Save, FileText, PackageOpen, Plus, Trash2, Search } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard, DemoNoteInline } from "@/components/parts";
 import { Button, PageHeader, Field, Input, Select, Textarea } from "@/components/ui";
 import { useToast } from "@/components/toast";
@@ -29,8 +29,7 @@ function Inner() {
   const toast = useToast();
   const [mode, setMode] = useState<"order" | "direct">("direct");
   const [items, setItems] = useState<LineItem[]>([]);
-  const [addSerial, setAddSerial] = useState("");
-  const [addPrice, setAddPrice] = useState("");
+  const [query, setQuery] = useState("");
   const [withWarranty, setWithWarranty] = useState(false);
 
   const sellable = orders.filter((o) => o.status !== "huy");
@@ -38,28 +37,35 @@ function Inner() {
   const available = inStock.filter((m) => !items.some((i) => i.serial === m.serial));
   const total = items.reduce((s, i) => s + i.price, 0);
 
-  const addItem = () => {
-    const m = inStock.find((x) => x.serial === addSerial);
-    if (!m) return toast("Chọn máy để thêm", "warning");
-    const price = Number(addPrice);
-    if (!price || price <= 0) return toast("Nhập giá bán hợp lệ", "warning");
+  const matches = query.trim()
+    ? available
+        .filter((m) => `${m.serial} ${m.brand} ${m.model} ${m.cpu}`.toLowerCase().includes(query.trim().toLowerCase()))
+        .slice(0, 6)
+    : [];
+
+  const addMachine = (serial: string) => {
+    const m = inStock.find((x) => x.serial === serial);
+    if (!m) return;
     setItems((s) => [
       ...s,
-      { serial: m.serial, name: `${m.brand} ${m.model}`, config: `${m.cpu} · ${m.ram} · ${m.storage}`, price },
+      { serial: m.serial, name: `${m.brand} ${m.model}`, config: `${m.cpu} · ${m.ram} · ${m.storage}`, price: 0 },
     ]);
-    setAddSerial("");
-    setAddPrice("");
+    setQuery("");
   };
+
+  const setPrice = (serial: string, price: number) =>
+    setItems((s) => s.map((i) => (i.serial === serial ? { ...i, price } : i)));
 
   const removeItem = (serial: string) => setItems((s) => s.filter((i) => i.serial !== serial));
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === "direct" && items.length === 0) return toast("Thêm ít nhất 1 sản phẩm vào hoá đơn", "warning");
+    if (mode === "direct") {
+      if (items.length === 0) return toast("Thêm ít nhất 1 sản phẩm vào hoá đơn", "warning");
+      if (items.some((i) => !i.price)) return toast("Nhập giá bán cho tất cả sản phẩm", "warning");
+    }
     toast(
-      mode === "direct"
-        ? `Đã tạo hoá đơn ${items.length} sản phẩm · ${formatVND(total)} (demo)`
-        : "Đã tạo hoá đơn (demo)",
+      mode === "direct" ? `Đã tạo hoá đơn ${items.length} sản phẩm · ${formatVND(total)} (demo)` : "Đã tạo hoá đơn (demo)",
     );
     router.push("/hoa-don");
   };
@@ -72,7 +78,7 @@ function Inner() {
   return (
     <div>
       <BackLink href="/hoa-don">Về danh sách hoá đơn</BackLink>
-      <PageHeader title="Tạo hoá đơn" subtitle="Tự chọn nhiều máy từ kho thêm vào 1 hoá đơn, hoặc lập từ đơn bán có sẵn" />
+      <PageHeader title="Tạo hoá đơn" subtitle="Tìm máy theo Mã SP rồi thêm vào hoá đơn — nhiều máy trong 1 hoá đơn" />
 
       <form onSubmit={submit} className="space-y-3">
         <div className="inline-flex rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5">
@@ -135,51 +141,65 @@ function Inner() {
               </SectionCard>
             </div>
 
-            {/* Cột phải: dựng danh sách sản phẩm */}
+            {/* Cột phải: tìm mã SP + danh sách sản phẩm */}
             <div className="lg:col-span-2">
               <SectionCard title="Sản phẩm trong hoá đơn">
-                {/* Hàng thêm sản phẩm */}
-                <div className="flex flex-wrap items-end gap-2">
-                  <div className="min-w-[200px] flex-1">
-                    <Field label="Chọn máy từ kho" hint={`Còn ${available.length} máy tồn kho`}>
-                      <Select value={addSerial} onChange={(e) => setAddSerial(e.target.value)}>
-                        <option value="">— Chọn máy —</option>
-                        {available.map((m) => (
-                          <option key={m.id} value={m.serial}>
-                            {m.serial} · {m.brand} {m.model} ({m.cpu}/{m.ram})
-                          </option>
-                        ))}
-                      </Select>
-                    </Field>
+                {/* Ô tìm theo mã */}
+                <Field label="Tìm sản phẩm theo Mã SP" hint={`${available.length} máy tồn kho có thể thêm`}>
+                  <div className="relative">
+                    <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+                    <Input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Nhập mã máy, VD: DL5420 hoặc HP840..."
+                      className="pl-9"
+                    />
                   </div>
-                  <div className="w-40">
-                    <Field label="Giá bán (₫)">
-                      <Input
-                        type="number"
-                        value={addPrice}
-                        onChange={(e) => setAddPrice(e.target.value)}
-                        placeholder="VD: 12500000"
-                      />
-                    </Field>
-                  </div>
-                  <Button type="button" variant="outline" onClick={addItem}>
-                    <Plus size={16} /> Thêm
-                  </Button>
-                </div>
+                </Field>
 
-                {/* Bảng sản phẩm đã thêm */}
+                {/* Kết quả tìm được → bấm để thêm */}
+                {query.trim() && (
+                  <div className="mt-2 overflow-hidden rounded-lg border border-[var(--border)]">
+                    {matches.length === 0 ? (
+                      <p className="px-3 py-3 text-center text-sm text-[var(--muted)]">
+                        Không tìm thấy máy tồn kho khớp mã “{query}”.
+                      </p>
+                    ) : (
+                      matches.map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => addMachine(m.serial)}
+                          className="flex w-full items-center justify-between gap-3 border-b border-[var(--border)] px-3 py-2 text-left last:border-0 hover:bg-[var(--surface-2)]"
+                        >
+                          <span className="min-w-0">
+                            <span className="block font-mono text-xs font-medium">{m.serial}</span>
+                            <span className="block truncate text-xs text-[var(--muted)]">
+                              {m.brand} {m.model} · {m.cpu}/{m.ram}/{m.storage}
+                            </span>
+                          </span>
+                          <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-[var(--primary)]">
+                            <Plus size={14} /> Thêm
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Danh sách sản phẩm đã thêm */}
                 {items.length === 0 ? (
                   <p className="mt-3 rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--muted)]">
-                    Chưa có sản phẩm nào. Chọn máy + nhập giá rồi bấm <b>Thêm</b>.
+                    Chưa có sản phẩm. Gõ mã máy ở trên để tìm và thêm vào hoá đơn.
                   </p>
                 ) : (
                   <div className="mt-3 overflow-hidden rounded-lg border border-[var(--border)]">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-[var(--border)] bg-[var(--surface-2)] text-left text-xs uppercase tracking-wide text-[var(--muted)]">
-                          <th className="px-3 py-2 font-medium">Serial</th>
+                          <th className="px-3 py-2 font-medium">Mã SP</th>
                           <th className="px-3 py-2 font-medium">Sản phẩm</th>
-                          <th className="px-3 py-2 text-right font-medium">Giá bán</th>
+                          <th className="px-3 py-2 font-medium">Giá bán (₫)</th>
                           <th className="w-10 px-3 py-2"></th>
                         </tr>
                       </thead>
@@ -191,7 +211,15 @@ function Inner() {
                               <div className="font-medium">{i.name}</div>
                               <div className="text-xs text-[var(--muted)]">{i.config}</div>
                             </td>
-                            <td className="whitespace-nowrap px-3 py-2 text-right font-medium">{formatVND(i.price)}</td>
+                            <td className="px-3 py-2">
+                              <Input
+                                type="number"
+                                value={i.price || ""}
+                                onChange={(e) => setPrice(i.serial, Number(e.target.value))}
+                                placeholder="Nhập giá"
+                                className="h-8 w-32"
+                              />
+                            </td>
                             <td className="px-3 py-2 text-right">
                               <button
                                 type="button"
@@ -209,10 +237,9 @@ function Inner() {
                           <td colSpan={2} className="px-3 py-2.5 text-right text-sm font-medium">
                             Tổng cộng ({items.length} sản phẩm)
                           </td>
-                          <td className="px-3 py-2.5 text-right text-base font-bold text-[var(--primary)]">
+                          <td colSpan={2} className="px-3 py-2.5 text-base font-bold text-[var(--primary)]">
                             {formatVND(total)}
                           </td>
-                          <td></td>
                         </tr>
                       </tfoot>
                     </table>

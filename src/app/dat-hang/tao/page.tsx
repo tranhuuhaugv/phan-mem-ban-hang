@@ -27,12 +27,12 @@ function Inner() {
   return (
     <div>
       <BackLink href="/dat-hang">Về danh sách đơn</BackLink>
-      <PageHeader title="Tạo đơn đặt hàng" subtitle="Chỉ chọn được máy đang Tồn kho — gán Serial để không bán trùng" />
+      <PageHeader title="Tạo đơn đặt hàng" subtitle="Chỉ chọn được máy đang Tồn kho — gán Mã SP để không bán trùng" />
       <form
         onSubmit={(e) => {
           e.preventDefault();
           if (!serial) {
-            toast("Vui lòng chọn máy (Serial) để bán", "warning");
+            toast("Vui lòng chọn máy (Mã SP) để bán", "warning");
             return;
           }
           toast(`Đã tạo đơn cho máy ${serial} (demo)`);
@@ -52,7 +52,7 @@ function Inner() {
         </SectionCard>
 
         <SectionCard title="Máy bán">
-          <Field label="Chọn máy tồn kho (Serial) *" hint={`${available.length} máy đang tồn kho có thể bán`}>
+          <Field label="Chọn máy tồn kho (Mã SP) *" hint={`${available.length} máy đang tồn kho có thể bán`}>
             <Select value={serial} onChange={(e) => setSerial(e.target.value)}>
               <option value="">— Chọn máy —</option>
               {available.map((m) => (

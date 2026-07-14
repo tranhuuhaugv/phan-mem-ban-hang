@@ -50,7 +50,7 @@ function Inner() {
         </Select>
       </div>
 
-      <Table head={["Mã phiếu", "Serial / Máy", "Lỗi", "CP dự kiến", "Ngày nhận", "Trạng thái", ""]}>
+      <Table head={["Mã phiếu", "Mã SP / Máy", "Lỗi", "CP dự kiến", "Ngày nhận", "Trạng thái", ""]}>
         {rows.map((r) => (
           <Tr key={r.id}>
             <Td className="font-mono text-xs font-medium">{r.code}</Td>
@@ -78,7 +78,7 @@ function Inner() {
       <Modal open={!!view} onClose={() => setView(null)} title={`Phiếu sửa ${view?.code ?? ""}`}>
         {view && (
           <div>
-            <DetailRow label="Serial">
+            <DetailRow label="Mã SP">
               <span className="font-mono">{view.serial}</span>
             </DetailRow>
             <DetailRow label="Máy">{view.model}</DetailRow>

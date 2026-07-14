@@ -30,7 +30,7 @@ export default function KhoPage() {
     <div>
       <PageHeader
         title="Kho sản phẩm"
-        subtitle={`${machines.length} máy trong hệ thống · lọc theo model / trạng thái / Serial`}
+        subtitle={`${machines.length} máy trong hệ thống · lọc theo model / trạng thái / Mã SP`}
         actions={
           perm.create && (
             <Button href="/kho/them">
@@ -44,7 +44,7 @@ export default function KhoPage() {
         <div className="relative flex-1 min-w-[220px]">
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
           <Input
-            placeholder="Tìm theo Serial, model, CPU..."
+            placeholder="Tìm theo Mã SP, model, CPU..."
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="pl-9"
@@ -60,7 +60,7 @@ export default function KhoPage() {
         </Select>
       </div>
 
-      <Table head={["Số Serial", "Model", "Cấu hình", "Loại", "Giá nhập", "Trạng thái", ""]}>
+      <Table head={["Mã SP", "Model", "Cấu hình", "Loại", "Giá nhập", "Trạng thái", ""]}>
         {rows.map((m) => (
           <Tr key={m.id}>
             <Td>

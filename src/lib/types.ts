@@ -31,10 +31,10 @@ export const CONDITION_LABEL: Record<Condition, string> = {
   new: "Mới",
 };
 
-// Kho sản phẩm — Số Serial là khoá duy nhất
+// Kho sản phẩm — Mã SP là khoá duy nhất (biến giữ tên `serial`, hiển thị là "Mã SP")
 export interface Machine {
   id: string;
-  serial: string; // khoá duy nhất, không trùng
+  serial: string; // Mã SP — khoá duy nhất, không trùng
   brand: string; // Hãng
   model: string;
   cpu: string;

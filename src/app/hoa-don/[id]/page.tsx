@@ -75,7 +75,7 @@ function Inner({ id }: { id: string }) {
           <thead>
             <tr className="border-y border-[var(--border)] text-left text-[var(--muted)]">
               <th className="py-2">Sản phẩm</th>
-              <th className="py-2">Serial</th>
+              <th className="py-2">Mã SP</th>
               <th className="py-2 text-right">Thành tiền</th>
             </tr>
           </thead>
@@ -114,7 +114,7 @@ function Inner({ id }: { id: string }) {
               <ShieldCheck size={15} className="text-[var(--success)]" /> Phiếu bảo hành
             </div>
             <div className="text-[var(--muted)]">
-              Serial {warranty.serial} · {warranty.months} tháng kể từ {formatDate(warranty.startDate)}
+              Mã SP {warranty.serial} · {warranty.months} tháng kể từ {formatDate(warranty.startDate)}
             </div>
             <div className="text-[var(--muted)]">Điều kiện: {warranty.condition}</div>
           </div>

@@ -95,7 +95,7 @@ function Inner() {
             <Button
               onClick={() => {
                 if (!serial.trim()) {
-                  toast("Nhập Số Serial để gán cho máy", "warning");
+                  toast("Nhập Mã SP để gán cho máy", "warning");
                   return;
                 }
                 toast(`Đã duyệt ${approve?.code} — máy ${serial} được đẩy vào kho (demo)`);
@@ -115,7 +115,7 @@ function Inner() {
             <DetailRow label="Tình trạng">{approve.condition}</DetailRow>
             <DetailRow label="Giá thu">{formatVND(approve.price)}</DetailRow>
             <div className="mt-4">
-              <Field label="Gán Số Serial cho máy *" hint="Duyệt phiếu = xác nhận chi tiền và tạo máy mới trong kho">
+              <Field label="Gán Mã SP cho máy *" hint="Duyệt phiếu = xác nhận chi tiền và tạo máy mới trong kho">
                 <Input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="VD: HP840-G8-2210" />
               </Field>
             </div>

@@ -28,7 +28,7 @@ function Inner() {
     <div>
       <PageHeader
         title="Đặt hàng"
-        subtitle="Đơn bán gán Serial cụ thể để tránh bán trùng máy"
+        subtitle="Đơn bán gán Mã SP cụ thể để tránh bán trùng máy"
         actions={
           can("dat-hang").create && (
             <Button href="/dat-hang/tao">
@@ -49,7 +49,7 @@ function Inner() {
         </Select>
       </div>
 
-      <Table head={["Mã đơn", "Khách hàng", "Máy (Serial)", "Giá bán", "Cọc", "Ngày", "Trạng thái"]}>
+      <Table head={["Mã đơn", "Khách hàng", "Máy (Mã SP)", "Giá bán", "Cọc", "Ngày", "Trạng thái"]}>
         {rows.map((o) => (
           <Tr key={o.id}>
             <Td>

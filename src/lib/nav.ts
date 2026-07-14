@@ -48,7 +48,7 @@ export const NAV: NavItem[] = [
     links: [
       { label: "Danh sách tồn kho", href: "/kho" },
       { label: "Thêm máy mới", href: "/kho/them" },
-      { label: "Tra cứu Serial", href: "/kho/tra-cuu" },
+      { label: "Tra cứu Mã SP", href: "/kho/tra-cuu" },
       { label: "Kiểm kê", href: "/kho/kiem-ke" },
     ],
   },

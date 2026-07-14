@@ -25,7 +25,7 @@ function Inner() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!serial.trim()) {
-      toast("Vui lòng nhập Số Serial", "warning");
+      toast("Vui lòng nhập Mã SP", "warning");
       return;
     }
     toast(`Đã thêm máy ${serial} vào kho (demo)`);
@@ -35,13 +35,13 @@ function Inner() {
   return (
     <div>
       <BackLink href="/kho">Về danh sách kho</BackLink>
-      <PageHeader title="Thêm máy mới" subtitle="Nhập thông tin 1 máy vào kho — Số Serial là khoá duy nhất, không trùng" />
+      <PageHeader title="Thêm máy mới" subtitle="Nhập thông tin 1 máy vào kho — Mã SP là khoá duy nhất, không trùng" />
 
       <form onSubmit={submit} className="space-y-3">
         <div className="grid items-start gap-3 lg:grid-cols-3">
           <SectionCard title="Định danh máy">
             <div className="space-y-3">
-              <Field label="Số Serial *" hint="Không được trùng máy đã có">
+              <Field label="Mã SP *" hint="Không được trùng máy đã có">
                 <Input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="VD: DL5420-A1001" />
               </Field>
               <Field label="Chọn nhanh từ danh mục" hint="Tự điền cấu hình chuẩn">

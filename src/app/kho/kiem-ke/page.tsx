@@ -53,7 +53,7 @@ function Inner() {
         </Card>
       </div>
 
-      <Table head={["✓", "Số Serial", "Model", "Trạng thái HT", "Kiểm kê"]}>
+      <Table head={["✓", "Mã SP", "Model", "Trạng thái HT", "Kiểm kê"]}>
         {list.map((m) => (
           <Tr key={m.id}>
             <Td>

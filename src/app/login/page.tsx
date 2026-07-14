@@ -51,11 +51,11 @@ export default function LoginPage() {
             kho laptop nội bộ
           </h1>
           <p className="mt-3 max-w-sm text-white/80">
-            Quản lý tồn kho theo Serial, thu máy, đặt hàng, sửa chữa, thu chi và báo cáo lãi/lỗ — tất cả trong một nơi.
+            Quản lý tồn kho theo Mã SP, thu máy, đặt hàng, sửa chữa, thu chi và báo cáo lãi/lỗ — tất cả trong một nơi.
           </p>
           <div className="mt-8 space-y-3">
             {[
-              { icon: <Boxes size={18} />, t: "Quản lý kho theo từng Số Serial" },
+              { icon: <Boxes size={18} />, t: "Quản lý kho theo từng Mã SP" },
               { icon: <Wallet size={18} />, t: "Sổ quỹ & báo cáo lãi/lỗ tự động" },
               { icon: <ShieldCheck size={18} />, t: "Phân quyền 3 vai trò rõ ràng" },
             ].map((f, i) => (
