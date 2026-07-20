@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Boxes, UserRound } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard, DetailRow } from "@/components/parts";
+import { CustomerField } from "@/components/customer-field";
 import { Button, PageHeader, Field, Input, Textarea, Select } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { useApi, apiPost } from "@/lib/api";
@@ -98,12 +99,12 @@ function Inner() {
                 <Field label="Tên máy *" hint="Máy của khách, không có trong kho">
                   <Input value={f.machineName} onChange={set("machineName")} placeholder="VD: Dell XPS 13 9310" />
                 </Field>
-                <Field label="Khách hàng">
-                  <Input value={f.customerName} onChange={set("customerName")} placeholder="VD: Nguyễn Văn A" />
-                </Field>
-                <Field label="Số điện thoại">
-                  <Input value={f.customerPhone} onChange={set("customerPhone")} placeholder="VD: 0901234567" />
-                </Field>
+                <CustomerField
+                  name={f.customerName}
+                  phone={f.customerPhone}
+                  onName={(v) => setF((s) => ({ ...s, customerName: v }))}
+                  onPhone={(v) => setF((s) => ({ ...s, customerPhone: v }))}
+                />
               </div>
             ) : (
               <div className="space-y-3">

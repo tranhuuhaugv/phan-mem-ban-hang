@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard, DetailRow } from "@/components/parts";
+import { CustomerField } from "@/components/customer-field";
 import { Button, PageHeader, Field, Input, Select } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { useApi, apiPost } from "@/lib/api";
@@ -61,14 +62,12 @@ function Inner() {
       <form onSubmit={submit} className="space-y-3">
         <div className="grid items-start gap-3 lg:grid-cols-3">
           <SectionCard title="Khách hàng">
-            <div className="space-y-3">
-              <Field label="Tên khách / công ty *">
-                <Input value={f.customerName} onChange={set("customerName")} placeholder="VD: Nguyễn Hải Đăng" required />
-              </Field>
-              <Field label="Số điện thoại">
-                <Input value={f.phone} onChange={set("phone")} placeholder="VD: 0905556677" />
-              </Field>
-            </div>
+            <CustomerField
+              name={f.customerName}
+              phone={f.phone}
+              onName={(v) => setF((s) => ({ ...s, customerName: v }))}
+              onPhone={(v) => setF((s) => ({ ...s, phone: v }))}
+            />
           </SectionCard>
 
           <SectionCard title="Máy bán">

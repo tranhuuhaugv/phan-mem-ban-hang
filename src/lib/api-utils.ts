@@ -58,6 +58,35 @@ export async function nextCode(
   return `${prefix}${String(n).padStart(pad, "0")}`;
 }
 
+// Lưu khách vào danh bạ nếu có SĐT: có rồi → cập nhật tên, chưa có → tạo mới. Trả customerId.
+// client = db hoặc transaction client (tx).
+type CustomerUpsertClient = {
+  customer: {
+    upsert: (args: {
+      where: { phone: string };
+      update: { name?: string; address?: string; note?: string };
+      create: { name: string; phone: string; address?: string; note?: string };
+    }) => Promise<{ id: string }>;
+  };
+};
+
+export async function upsertCustomer(
+  client: CustomerUpsertClient,
+  name: string,
+  phone: string,
+  extra?: { address?: string; note?: string },
+): Promise<string | null> {
+  const p = (phone ?? "").trim();
+  if (!p) return null; // không có SĐT thì không lưu được (khoá dedup là SĐT)
+  const n = (name ?? "").trim();
+  const c = await client.customer.upsert({
+    where: { phone: p },
+    update: { ...(n ? { name: n } : {}), ...(extra ?? {}) },
+    create: { name: n || "Khách lẻ", phone: p, ...(extra ?? {}) },
+  });
+  return c.id;
+}
+
 // ===== Serializers: DB row → hình dạng UI đang dùng (src/lib/types.ts) =====
 
 type MachineRow = {
@@ -70,6 +99,7 @@ type MachineRow = {
   storage: string;
   screen: string;
   condition: string;
+  category: string | null;
   purchasePrice: number;
   source: string;
   status: string;
@@ -88,6 +118,7 @@ export function serializeMachine(m: MachineRow) {
     storage: m.storage,
     screen: m.screen,
     condition: m.condition,
+    category: m.category ?? undefined,
     purchasePrice: m.purchasePrice,
     source: m.source,
     status: m.status,

@@ -37,11 +37,9 @@ export const machines: Machine[] = [
 ];
 
 export const categories: Category[] = [
-  { id: "c1", brand: "Dell", model: "Latitude 5420", cpu: "i5-1135G7", ram: "16GB", storage: "512GB SSD", type: "like_new", machineCount: 1 },
-  { id: "c2", brand: "HP", model: "EliteBook 840 G8", cpu: "i7-1165G7", ram: "16GB", storage: "512GB SSD", type: "like_new", machineCount: 1 },
-  { id: "c3", brand: "Lenovo", model: "ThinkPad X1 Carbon Gen9", cpu: "i7-1165G7", ram: "16GB", storage: "1TB SSD", type: "like_new", machineCount: 1 },
-  { id: "c4", brand: "Asus", model: "Vivobook 15", cpu: "i3-1115G4", ram: "8GB", storage: "256GB SSD", type: "cu", machineCount: 1 },
-  { id: "c5", brand: "Apple", model: "MacBook Air M1", cpu: "Apple M1", ram: "8GB", storage: "256GB SSD", type: "like_new", machineCount: 1 },
+  { id: "c1", name: "Laptop", note: "Laptop Windows các hãng", machineCount: 0 },
+  { id: "c2", name: "Macbook", note: "Máy Apple", machineCount: 0 },
+  { id: "c3", name: "Phụ kiện", note: "Chuột, sạc, balo, RAM, SSD...", machineCount: 0 },
 ];
 
 export const buyReceipts: BuyReceipt[] = [

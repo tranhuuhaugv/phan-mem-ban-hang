@@ -62,6 +62,7 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
       storage: b.storage !== undefined ? String(b.storage) : undefined,
       screen: b.screen !== undefined ? String(b.screen) : undefined,
       condition: b.condition !== undefined ? (b.condition as Condition) : undefined,
+      category: b.category !== undefined ? (b.category ? String(b.category) : null) : undefined,
       purchasePrice: b.purchasePrice !== undefined ? Number(b.purchasePrice) : undefined,
       source: b.source !== undefined ? String(b.source) : undefined,
       status: b.status !== undefined ? (b.status as MachineStatus) : undefined,

@@ -42,6 +42,7 @@ export interface Machine {
   storage: string; // Ổ cứng
   screen: string; // Màn hình
   condition: Condition; // Ngoại hình / loại
+  category?: string; // Danh mục: Laptop / Macbook / Phụ kiện...
   purchasePrice: number; // Giá nhập
   source: string; // Nguồn nhập
   status: MachineStatus;
@@ -49,16 +50,12 @@ export interface Machine {
   createdAt: string; // ngày nhập
 }
 
-// Danh mục sản phẩm (Hãng / Model / Cấu hình chuẩn hoá)
+// Danh mục = loại sản phẩm (Laptop / Macbook / Phụ kiện...)
 export interface Category {
   id: string;
-  brand: string;
-  model: string;
-  cpu: string;
-  ram: string;
-  storage: string;
-  type: Condition; // Cũ / Like new
-  machineCount: number; // số máy đang dùng danh mục này (chặn xoá)
+  name: string;
+  note?: string;
+  machineCount: number; // số máy thuộc danh mục này (chặn xoá)
 }
 
 // Thu máy — mua lại máy cũ từ khách

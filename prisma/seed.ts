@@ -46,6 +46,7 @@ async function main() {
         storage: m.storage,
         screen: m.screen,
         condition: m.condition,
+        category: m.brand === "Apple" ? "Macbook" : "Laptop",
         purchasePrice: m.purchasePrice,
         source: m.source,
         status: m.status,
@@ -56,11 +57,9 @@ async function main() {
     machineIdBySerial.set(m.serial, row.id);
   }
 
-  // Danh mục
+  // Danh mục (loại sản phẩm)
   for (const c of categories) {
-    await db.category.create({
-      data: { brand: c.brand, model: c.model, cpu: c.cpu, ram: c.ram, storage: c.storage, type: c.type },
-    });
+    await db.category.create({ data: { name: c.name, note: c.note ?? null } });
   }
 
   // Khách hàng

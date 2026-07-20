@@ -64,6 +64,9 @@ function Inner({ serial }: { serial: string }) {
             </div>
             <MachineStatusBadge status={machine.status} />
           </div>
+          <DetailRow label="Danh mục">
+            {machine.category ? <Badge tone="purple">{machine.category}</Badge> : "—"}
+          </DetailRow>
           <DetailRow label="Cấu hình">
             {machine.cpu} · {machine.ram} · {machine.storage}
           </DetailRow>

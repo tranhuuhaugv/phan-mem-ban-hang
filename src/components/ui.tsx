@@ -184,7 +184,7 @@ export function EmptyState({ text }: { text: string }) {
   return <div className="card p-10 text-center text-sm text-[var(--muted)]">{text}</div>;
 }
 
-export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
+export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: ReactNode }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium">{label}</span>

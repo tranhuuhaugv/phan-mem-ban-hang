@@ -23,9 +23,14 @@ export default function KhoPage() {
   const [cauHinh, setCauHinh] = useState("");
   const [status, setStatus] = useState<MachineStatus | "all">("all");
   const [brand, setBrand] = useState<string>("all");
+  const [category, setCategory] = useState<string>("all");
   const [del, setDel] = useState<Machine | null>(null);
 
   const brands = useMemo(() => Array.from(new Set(machines.map((m) => m.brand))).sort(), [machines]);
+  const cats = useMemo(
+    () => Array.from(new Set(machines.map((m) => m.category).filter(Boolean) as string[])).sort(),
+    [machines],
+  );
 
   const rows = useMemo(() => {
     const qMa = maSP.trim().toLowerCase();
@@ -34,12 +39,13 @@ export default function KhoPage() {
     return machines.filter((m) => {
       if (status !== "all" && m.status !== status) return false;
       if (brand !== "all" && m.brand !== brand) return false;
+      if (category !== "all" && m.category !== category) return false;
       if (qMa && !m.serial.toLowerCase().includes(qMa)) return false;
       if (qTen && !`${m.brand} ${m.model}`.toLowerCase().includes(qTen)) return false;
       if (qCh && !`${m.cpu} ${m.ram} ${m.storage} ${m.screen}`.toLowerCase().includes(qCh)) return false;
       return true;
     });
-  }, [machines, maSP, ten, cauHinh, status, brand]);
+  }, [machines, maSP, ten, cauHinh, status, brand, category]);
 
   return (
     <div>
@@ -56,7 +62,7 @@ export default function KhoPage() {
       />
 
       {/* Mỗi tiêu chí 1 ô riêng */}
-      <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-5">
+      <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
         <div className="relative">
           <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
           <Input placeholder="Mã SP (VD: SP0001)" value={maSP} onChange={(e) => setMaSP(e.target.value)} className="pl-8" />
@@ -69,6 +75,14 @@ export default function KhoPage() {
           <Cpu size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
           <Input placeholder="Cấu hình (VD: 16GB, i7...)" value={cauHinh} onChange={(e) => setCauHinh(e.target.value)} className="pl-8" />
         </div>
+        <Select value={category} onChange={(e) => setCategory(e.target.value)}>
+          <option value="all">Tất cả danh mục</option>
+          {cats.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </Select>
         <Select value={brand} onChange={(e) => setBrand(e.target.value)}>
           <option value="all">Tất cả hãng</option>
           {brands.map((b) => (
@@ -87,7 +101,7 @@ export default function KhoPage() {
         </Select>
       </div>
 
-      <Table head={["Mã SP", "Tên sản phẩm", "Cấu hình", "Loại", "Giá nhập", "Ngày nhập", "Trạng thái", ""]}>
+      <Table head={["Mã SP", "Tên sản phẩm", "Danh mục", "Cấu hình", "Loại", "Giá nhập", "Ngày nhập", "Trạng thái", ""]}>
         {rows.map((m) => (
           <Tr key={m.id}>
             <Td>
@@ -101,6 +115,7 @@ export default function KhoPage() {
               </Link>
               <div className="text-xs text-[var(--muted)]">{m.brand}</div>
             </Td>
+            <Td>{m.category ? <Badge tone="purple">{m.category}</Badge> : <span className="text-xs text-[var(--muted)]">—</span>}</Td>
             <Td>
               <div className="text-xs text-[var(--muted)]">
                 {m.cpu} · {m.ram} · {m.storage}

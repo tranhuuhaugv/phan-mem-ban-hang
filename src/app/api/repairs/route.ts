@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
-import { handler, ok, serializeRepair, nextCode } from "@/lib/api-utils";
+import { handler, ok, serializeRepair, nextCode, upsertCustomer } from "@/lib/api-utils";
 
 export const GET = handler(async () => {
   await requirePermission("sua-chua", "view");
@@ -30,13 +30,19 @@ export const POST = handler(async (req: Request) => {
   }
 
   const code = await nextCode("repair", "SC-", 4);
+  const customerName = b.customerName ? String(b.customerName).trim() : null;
+  const customerPhone = b.customerPhone ? String(b.customerPhone).trim() : null;
+
   const row = await db.$transaction(async (tx) => {
+    // Tự lưu khách vào danh bạ (nếu có SĐT)
+    if (customerPhone) await upsertCustomer(tx, customerName ?? "", customerPhone);
+
     const repair = await tx.repair.create({
       data: {
         code,
         machineName,
-        customerName: b.customerName ? String(b.customerName).trim() : null,
-        customerPhone: b.customerPhone ? String(b.customerPhone).trim() : null,
+        customerName,
+        customerPhone,
         errorDesc: String(b.errorDesc).trim(),
         estCost: Number(b.estCost) || 0,
         technician: b.technician ? String(b.technician).trim() : null,

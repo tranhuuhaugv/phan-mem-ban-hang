@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Tag } from "lucide-react";
 import { AccessGuard } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, Badge, Field, Input, Select, SearchInput } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, Badge, Field, Input, SearchInput } from "@/components/ui";
 import { Modal, ConfirmDialog } from "@/components/modal";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
 import { useApi, apiPost, apiPatch, apiDelete } from "@/lib/api";
-import { CONDITION_LABEL, type Category, type Condition } from "@/lib/types";
-
-const EMPTY = { brand: "", model: "", cpu: "", ram: "", storage: "", type: "like_new" as Condition };
+import type { Category } from "@/lib/types";
 
 export default function DanhMucPage() {
   return (
@@ -29,29 +27,27 @@ function Inner() {
 
   const [openForm, setOpenForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [f, setF] = useState(EMPTY);
+  const [f, setF] = useState({ name: "", note: "" });
   const [del, setDel] = useState<Category | null>(null);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const rows = categories.filter((c) =>
-    `${c.brand} ${c.model} ${c.cpu} ${c.ram} ${c.storage}`.toLowerCase().includes(q.trim().toLowerCase()),
-  );
+  const rows = categories.filter((c) => `${c.name} ${c.note ?? ""}`.toLowerCase().includes(q.trim().toLowerCase()));
 
   const openCreate = () => {
     setEditId(null);
-    setF(EMPTY);
+    setF({ name: "", note: "" });
     setOpenForm(true);
   };
   const openEdit = (c: Category) => {
     setEditId(c.id);
-    setF({ brand: c.brand, model: c.model, cpu: c.cpu, ram: c.ram, storage: c.storage, type: c.type });
+    setF({ name: c.name, note: c.note ?? "" });
     setOpenForm(true);
   };
 
   const save = async () => {
-    if (!f.brand.trim() || !f.model.trim()) {
-      toast("Nhập Hãng và Model", "warning");
+    if (!f.name.trim()) {
+      toast("Nhập tên danh mục", "warning");
       return;
     }
     setBusy(true);
@@ -61,7 +57,7 @@ function Inner() {
         toast("Đã cập nhật danh mục");
       } else {
         await apiPost("/api/categories", f);
-        toast("Đã tạo danh mục");
+        toast("Đã thêm danh mục");
       }
       setOpenForm(false);
       reload();
@@ -72,39 +68,42 @@ function Inner() {
     }
   };
 
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setF((s) => ({ ...s, [k]: e.target.value }));
 
   return (
     <div>
       <PageHeader
         title="Danh mục sản phẩm"
-        subtitle="Chuẩn hoá Hãng / Model / Cấu hình — nhập máy nhanh bằng dropdown"
+        subtitle="Các loại sản phẩm bạn kinh doanh: Laptop, Macbook, Phụ kiện... — tự thêm tuỳ ý"
         actions={
           perm.create && (
             <Button onClick={openCreate}>
-              <Plus size={16} /> Tạo danh mục
+              <Plus size={16} /> Thêm danh mục
             </Button>
           )
         }
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <SearchInput value={q} onChange={setQ} placeholder="Tìm hãng, model, cấu hình..." />
+        <SearchInput value={q} onChange={setQ} placeholder="Tìm danh mục..." className="max-w-sm" />
       </div>
 
-      <Table head={["Hãng", "Model", "Cấu hình", "Loại", "Số máy đang dùng", ""]}>
+      <Table head={["Danh mục", "Ghi chú", "Số sản phẩm", ""]}>
         {rows.map((c) => (
           <Tr key={c.id}>
-            <Td className="font-medium">{c.brand}</Td>
-            <Td>{c.model}</Td>
-            <Td className="text-xs text-[var(--muted)]">
-              {c.cpu} · {c.ram} · {c.storage}
-            </Td>
             <Td>
-              <Badge tone="muted">{CONDITION_LABEL[c.type]}</Badge>
+              <div className="flex items-center gap-2 font-medium">
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--purple-bg)] text-[var(--purple)]">
+                  <Tag size={14} />
+                </span>
+                {c.name}
+              </div>
             </Td>
-            <Td>{c.machineCount} máy</Td>
+            <Td className="text-sm text-[var(--muted)]">{c.note ?? "—"}</Td>
+            <Td>
+              <Badge tone={c.machineCount > 0 ? "info" : "muted"}>{c.machineCount} sản phẩm</Badge>
+            </Td>
             <Td>
               <div className="flex items-center justify-end gap-1">
                 {perm.edit && (
@@ -135,43 +134,24 @@ function Inner() {
       <Modal
         open={openForm}
         onClose={() => setOpenForm(false)}
-        title={editId ? "Sửa danh mục" : "Tạo danh mục"}
-        wide
+        title={editId ? "Sửa danh mục" : "Thêm danh mục"}
         footer={
           <>
             <Button variant="outline" onClick={() => setOpenForm(false)}>
               Huỷ
             </Button>
             <Button onClick={save} disabled={busy}>
-              {busy ? "Đang lưu..." : "Lưu danh mục"}
+              {busy ? "Đang lưu..." : "Lưu"}
             </Button>
           </>
         }
       >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Hãng *">
-            <Input value={f.brand} onChange={set("brand")} placeholder="VD: Dell" />
+        <div className="space-y-3">
+          <Field label="Tên danh mục *" hint="VD: Laptop, Macbook, Phụ kiện, Màn hình...">
+            <Input value={f.name} onChange={set("name")} placeholder="VD: Laptop" autoFocus />
           </Field>
-          <Field label="Model *">
-            <Input value={f.model} onChange={set("model")} placeholder="VD: Latitude 5420" />
-          </Field>
-          <Field label="CPU">
-            <Input value={f.cpu} onChange={set("cpu")} placeholder="VD: i5-1135G7" />
-          </Field>
-          <Field label="RAM">
-            <Input value={f.ram} onChange={set("ram")} placeholder="VD: 16GB" />
-          </Field>
-          <Field label="Ổ cứng">
-            <Input value={f.storage} onChange={set("storage")} placeholder="VD: 512GB SSD" />
-          </Field>
-          <Field label="Loại">
-            <Select value={f.type} onChange={set("type")}>
-              {Object.entries(CONDITION_LABEL).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </Select>
+          <Field label="Ghi chú">
+            <Input value={f.note} onChange={set("note")} placeholder="Tuỳ chọn" />
           </Field>
         </div>
       </Modal>
@@ -190,7 +170,7 @@ function Inner() {
           }
         }}
         title="Xoá danh mục"
-        message={del ? `Xoá danh mục "${del.brand} ${del.model}"?` : ""}
+        message={del ? `Xoá danh mục "${del.name}"?` : ""}
         confirmText="Xoá"
         danger
       />

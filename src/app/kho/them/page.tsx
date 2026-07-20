@@ -25,6 +25,7 @@ function Inner() {
 
   const [f, setF] = useState({
     serial: "",
+    category: "",
     brand: "",
     model: "",
     cpu: "",
@@ -40,12 +41,6 @@ function Inner() {
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setF((s) => ({ ...s, [k]: e.target.value }));
 
-  // Chọn danh mục → tự điền cấu hình chuẩn
-  const pickCategory = (id: string) => {
-    const c = (categories ?? []).find((x) => x.id === id);
-    if (c) setF((s) => ({ ...s, brand: c.brand, model: c.model, cpu: c.cpu, ram: c.ram, storage: c.storage, condition: c.type }));
-  };
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!f.brand.trim() || !f.model.trim()) {
@@ -56,6 +51,7 @@ function Inner() {
     try {
       const row = await apiPost<Machine>("/api/machines", {
         serial: f.serial,
+        category: f.category,
         brand: f.brand,
         model: f.model,
         cpu: f.cpu,
@@ -88,12 +84,12 @@ function Inner() {
               <Field label="Mã SP" hint="Bỏ trống = tự sinh mã kế tiếp, không trùng">
                 <Input value={f.serial} onChange={set("serial")} placeholder="VD: SP0009 (tuỳ chọn)" />
               </Field>
-              <Field label="Chọn nhanh từ danh mục" hint="Tự điền cấu hình chuẩn">
-                <Select defaultValue="" onChange={(e) => pickCategory(e.target.value)}>
-                  <option value="">— Không dùng danh mục —</option>
+              <Field label="Danh mục / Loại" hint="Phân loại sản phẩm (quản ở menu Danh mục)">
+                <Select value={f.category} onChange={set("category")}>
+                  <option value="">— Chọn danh mục —</option>
                   {(categories ?? []).map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.brand} {c.model} · {c.cpu}/{c.ram}/{c.storage}
+                    <option key={c.id} value={c.name}>
+                      {c.name}
                     </option>
                   ))}
                 </Select>

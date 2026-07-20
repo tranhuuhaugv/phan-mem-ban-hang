@@ -74,6 +74,7 @@ model Machine {
   storage       String
   screen        String
   condition     Condition
+  category      String? // loại sản phẩm: Laptop / Macbook / Phụ kiện...
   purchasePrice Int
   source        String
   status        MachineStatus @default(ton_kho)
@@ -87,15 +88,11 @@ model Machine {
   buyReceipt   BuyReceipt?
 }
 
-// Danh mục chuẩn hoá Hãng/Model/Cấu hình
+// Danh mục = loại sản phẩm (Laptop / Macbook / Phụ kiện...)
 model Category {
-  id      String    @id @default(cuid())
-  brand   String
-  model   String
-  cpu     String
-  ram     String
-  storage String
-  type    Condition
+  id   String  @id @default(cuid())
+  name String  @unique
+  note String?
 }
 
 // Phiếu thu máy (mua lại máy cũ từ khách)

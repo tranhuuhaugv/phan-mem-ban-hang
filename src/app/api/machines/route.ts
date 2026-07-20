@@ -26,6 +26,7 @@ export const POST = handler(async (req: Request) => {
       storage: String(b.storage ?? "").trim(),
       screen: String(b.screen ?? "").trim(),
       condition: (b.condition ?? "like_new") as Condition,
+      category: b.category ? String(b.category).trim() : null,
       purchasePrice: Number(b.purchasePrice) || 0,
       source: String(b.source ?? "").trim(),
       status: (b.status ?? "ton_kho") as MachineStatus,

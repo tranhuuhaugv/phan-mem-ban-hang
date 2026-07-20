@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
-import { handler, ok, serializeInvoice, nextCode } from "@/lib/api-utils";
+import { handler, ok, serializeInvoice, nextCode, upsertCustomer } from "@/lib/api-utils";
 
 export const GET = handler(async () => {
   await requirePermission("hoa-don", "view");
@@ -94,12 +94,18 @@ export const POST = handler(async (req: Request) => {
 
   const total = items.reduce((s, i) => s + Number(i.price), 0);
 
+  const custName = String(b.customerName ?? "Khách lẻ").trim() || "Khách lẻ";
+  const custPhone = b.phone ? String(b.phone).trim() : "";
+
   const row = await db.$transaction(async (tx) => {
+    // Tự lưu khách vào danh bạ (nếu có SĐT)
+    if (custPhone) await upsertCustomer(tx, custName, custPhone);
+
     const invoice = await tx.invoice.create({
       data: {
         code,
-        customerName: String(b.customerName ?? "Khách lẻ").trim() || "Khách lẻ",
-        phone: b.phone ? String(b.phone).trim() : null,
+        customerName: custName,
+        phone: custPhone || null,
         total,
         items: {
           create: items.map((i) => {

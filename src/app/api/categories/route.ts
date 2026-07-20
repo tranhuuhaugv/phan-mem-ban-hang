@@ -1,18 +1,18 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
 import { handler, ok } from "@/lib/api-utils";
-import type { Condition } from "@/generated/prisma/enums";
 
 export const GET = handler(async () => {
   await requirePermission("danh-muc", "view");
   const [cats, machines] = await Promise.all([
-    db.category.findMany({ orderBy: [{ brand: "asc" }, { model: "asc" }] }),
-    db.machine.findMany({ select: { brand: true, model: true } }),
+    db.category.findMany({ orderBy: { name: "asc" } }),
+    db.machine.findMany({ select: { category: true } }),
   ]);
-  // Đếm số máy đang dùng danh mục (khớp hãng + model)
   const data = cats.map((c) => ({
-    ...c,
-    machineCount: machines.filter((m) => m.brand === c.brand && m.model === c.model).length,
+    id: c.id,
+    name: c.name,
+    note: c.note ?? undefined,
+    machineCount: machines.filter((m) => m.category === c.name).length,
   }));
   return ok(data);
 });
@@ -20,16 +20,12 @@ export const GET = handler(async () => {
 export const POST = handler(async (req: Request) => {
   await requirePermission("danh-muc", "create");
   const b = await req.json();
-  if (!b.brand || !b.model) throw new HttpError(400, "Nhập Hãng và Model");
+  const name = String(b.name ?? "").trim();
+  if (!name) throw new HttpError(400, "Nhập tên danh mục");
+  const dup = await db.category.findUnique({ where: { name } });
+  if (dup) throw new HttpError(409, "Danh mục này đã tồn tại");
   const row = await db.category.create({
-    data: {
-      brand: String(b.brand).trim(),
-      model: String(b.model).trim(),
-      cpu: String(b.cpu ?? "").trim(),
-      ram: String(b.ram ?? "").trim(),
-      storage: String(b.storage ?? "").trim(),
-      type: (b.type ?? "like_new") as Condition,
-    },
+    data: { name, note: b.note ? String(b.note).trim() : null },
   });
   return ok(row, 201);
 });
