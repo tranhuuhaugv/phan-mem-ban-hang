@@ -13,14 +13,20 @@ export const POST = handler(async (req: Request) => {
   const b = await req.json();
   if (!b.errorDesc) throw new HttpError(400, "Nhập mô tả lỗi");
 
-  // Máy trong kho (tuỳ chọn) — nếu có thì chuyển trạng thái Đang sửa
+  // source = "kho" (máy trong kho) | "khach" (máy khách mang tới)
   let machineId: string | null = null;
+  let machineName: string | null = null;
+
   if (b.serial) {
     const machine = await db.machine.findFirst({
       where: { serial: { equals: String(b.serial).trim(), mode: "insensitive" } },
     });
-    if (!machine) throw new HttpError(404, "Không tìm thấy máy với Mã SP này (bỏ trống nếu là máy khách mang tới)");
+    if (!machine) throw new HttpError(404, "Không tìm thấy máy với Mã SP này");
     machineId = machine.id;
+  } else {
+    // Máy khách mang tới → bắt buộc có tên máy
+    machineName = String(b.machineName ?? "").trim();
+    if (!machineName) throw new HttpError(400, "Nhập tên máy khách mang tới (hoặc chọn máy trong kho)");
   }
 
   const code = await nextCode("repair", "SC-", 4);
@@ -28,10 +34,14 @@ export const POST = handler(async (req: Request) => {
     const repair = await tx.repair.create({
       data: {
         code,
+        machineName,
+        customerName: b.customerName ? String(b.customerName).trim() : null,
+        customerPhone: b.customerPhone ? String(b.customerPhone).trim() : null,
         errorDesc: String(b.errorDesc).trim(),
         estCost: Number(b.estCost) || 0,
         technician: b.technician ? String(b.technician).trim() : null,
         receiveDate: b.receiveDate ? new Date(b.receiveDate) : new Date(),
+        status: b.status === "cho_linh_kien" ? "cho_linh_kien" : "dang_sua",
         machineId,
       },
       include: { machine: true },

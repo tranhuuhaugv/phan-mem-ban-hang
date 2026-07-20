@@ -153,12 +153,16 @@ export function serializeOrder(o: {
 export function serializeRepair(r: {
   id: string;
   code: string;
+  machineName: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
   errorDesc: string;
   estCost: number;
   actualCost: number | null;
   technician: string | null;
   receiveDate: Date;
   returnDate: Date | null;
+  note: string | null;
   status: string;
   machine?: { serial: string; brand: string; model: string } | null;
 }) {
@@ -166,13 +170,18 @@ export function serializeRepair(r: {
     id: r.id,
     code: r.code,
     serial: r.machine?.serial ?? "",
-    model: r.machine ? `${r.machine.brand} ${r.machine.model}` : "",
+    inStock: !!r.machine,
+    // Tên máy: máy trong kho → hãng+model, máy khách → machineName
+    model: r.machine ? `${r.machine.brand} ${r.machine.model}` : (r.machineName ?? ""),
+    customerName: r.customerName ?? undefined,
+    customerPhone: r.customerPhone ?? undefined,
     errorDesc: r.errorDesc,
     estCost: r.estCost,
     actualCost: r.actualCost ?? undefined,
     technician: r.technician ?? undefined,
     receiveDate: r.receiveDate.toISOString(),
     returnDate: r.returnDate?.toISOString(),
+    note: r.note ?? undefined,
     status: r.status,
   };
 }

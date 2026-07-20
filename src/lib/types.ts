@@ -116,14 +116,18 @@ export const REPAIR_STATUS_LABEL: Record<RepairStatus, string> = {
 export interface Repair {
   id: string;
   code: string; // Mã phiếu
-  serial: string;
-  model: string;
+  serial: string; // Mã SP nếu là máy trong kho
+  inStock?: boolean; // máy trong kho hay máy khách mang tới
+  model: string; // Tên máy (kho: hãng+model, khách: tự nhập)
+  customerName?: string; // Khách gửi sửa
+  customerPhone?: string;
   errorDesc: string; // Mô tả lỗi
   estCost: number; // Chi phí dự kiến
   actualCost?: number; // Chi phí thực tế
-  technician?: string; // Kỹ thuật viên
+  technician?: string; // KTV nhận / phụ trách
   receiveDate: string; // Ngày nhận máy
   returnDate?: string; // Ngày trả
+  note?: string; // Ghi chú / linh kiện đã thay
   status: RepairStatus;
 }
 

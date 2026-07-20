@@ -22,6 +22,7 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
         status,
         technician: b.technician !== undefined ? String(b.technician) : undefined,
         actualCost: b.actualCost !== undefined ? Number(b.actualCost) : undefined,
+        note: b.note !== undefined ? (b.note ? String(b.note) : null) : undefined,
         returnDate: status === "hoan_tat" ? new Date() : undefined,
       },
       include: { machine: true },

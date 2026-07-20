@@ -138,15 +138,19 @@ model Order {
 
 // Phiếu sửa chữa
 model Repair {
-  id          String       @id @default(cuid())
-  code        String       @unique
-  errorDesc   String
-  estCost     Int
-  actualCost  Int?
-  technician  String?
-  receiveDate DateTime     @default(now())
-  returnDate  DateTime?
-  status      RepairStatus @default(dang_sua)
+  id            String       @id @default(cuid())
+  code          String       @unique
+  machineName   String? // tên máy khi là máy khách mang tới (không có trong kho)
+  customerName  String? // khách gửi sửa
+  customerPhone String?
+  errorDesc     String
+  estCost       Int
+  actualCost    Int?
+  technician    String? // KTV nhận / phụ trách
+  receiveDate   DateTime     @default(now())
+  returnDate    DateTime?
+  note          String? // ghi chú khi trả máy / linh kiện đã thay
+  status        RepairStatus @default(dang_sua)
 
   machineId String?
   machine   Machine? @relation(fields: [machineId], references: [id])
