@@ -1,10 +1,16 @@
 "use client";
 
-import { Boxes, PackagePlus, Wrench, ShoppingCart, ShieldCheck } from "lucide-react";
-import { buildMachineHistory, type HistoryKind } from "@/lib/mock-data";
+import { Boxes, PackagePlus, Wrench, ShoppingCart, ShieldCheck, History } from "lucide-react";
 import { formatDateTime } from "@/lib/format";
 
-const META: Record<HistoryKind, { color: string; Icon: React.ComponentType<{ size?: number }> }> = {
+export interface HistoryEvent {
+  at: string; // ISO ngày giờ
+  kind: string; // nhap | thu | sua | ban | bh
+  label: string;
+  detail: string;
+}
+
+const META: Record<string, { color: string; Icon: React.ComponentType<{ size?: number }> }> = {
   nhap: { color: "#4f46e5", Icon: Boxes },
   thu: { color: "#0891b2", Icon: PackagePlus },
   sua: { color: "#ea580c", Icon: Wrench },
@@ -12,15 +18,13 @@ const META: Record<HistoryKind, { color: string; Icon: React.ComponentType<{ siz
   bh: { color: "#7c3aed", Icon: ShieldCheck },
 };
 
-export function MachineHistory({ serial }: { serial: string }) {
-  const events = buildMachineHistory(serial);
-  if (events.length === 0)
-    return <p className="text-sm text-[var(--muted)]">Chưa có lịch sử cho máy này.</p>;
+export function MachineHistory({ events }: { events: HistoryEvent[] }) {
+  if (events.length === 0) return <p className="text-sm text-[var(--muted)]">Chưa có lịch sử cho máy này.</p>;
 
   return (
     <div className="relative ml-1 space-y-4 border-l border-[var(--border)] pl-5">
       {events.map((e, i) => {
-        const { color, Icon } = META[e.kind];
+        const { color, Icon } = META[e.kind] ?? { color: "#64748b", Icon: History };
         return (
           <div key={i} className="relative">
             <span

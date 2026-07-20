@@ -189,8 +189,8 @@ export function Topbar() {
                   </div>
                 </div>
                 <button
-                  onClick={() => {
-                    logout();
+                  onClick={async () => {
+                    await logout();
                     router.replace("/login");
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-[var(--danger)] hover:bg-[var(--danger-bg)]"

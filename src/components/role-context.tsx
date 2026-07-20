@@ -1,61 +1,74 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import type { Account, Role } from "@/lib/types";
+import type { Role } from "@/lib/types";
 import { can, type MenuKey, type Permission } from "@/lib/permissions";
-import { accounts } from "@/lib/mock-data";
+import { api, apiPost } from "@/lib/api";
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  fullName: string;
+  role: Role;
+}
+
+type PermissionMap = Record<MenuKey, Permission>;
 
 interface AuthCtx {
-  ready: boolean; // đã đọc xong localStorage chưa (tránh nháy màn hình)
-  user: Account | null;
+  ready: boolean; // đã hỏi xong server phiên hiện tại chưa
+  user: AuthUser | null;
   role: Role;
-  login: (username: string, password: string) => { ok: boolean; error?: string };
-  logout: () => void;
+  login: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  logout: () => Promise<void>;
   can: (menu: MenuKey) => Permission;
 }
 
 const Ctx = createContext<AuthCtx | null>(null);
-const STORAGE_KEY = "auth-user";
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
-  const [user, setUser] = useState<Account | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [perms, setPerms] = useState<PermissionMap | null>(null);
 
+  // Hỏi server xem cookie phiên còn hạn không (kèm ma trận quyền hiện hành)
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const saved = JSON.parse(raw) as Account;
-        // đối chiếu lại với danh sách tài khoản
-        const match = accounts.find((a) => a.username === saved.username);
-        if (match && match.status === "active") setUser(match);
-      }
-    } catch {}
-    setReady(true);
+    api<{ user: AuthUser | null; permissions: PermissionMap | null }>("/api/auth/me")
+      .then((d) => {
+        setUser(d.user);
+        setPerms(d.permissions);
+      })
+      .catch(() => setUser(null))
+      .finally(() => setReady(true));
   }, []);
 
-  const login = (username: string, password: string) => {
-    const acc = accounts.find((a) => a.username.toLowerCase() === username.trim().toLowerCase());
-    if (!acc) return { ok: false, error: "Tài khoản không tồn tại" };
-    if (acc.status === "locked") return { ok: false, error: "Tài khoản đã bị khoá" };
-    if (!password.trim()) return { ok: false, error: "Vui lòng nhập mật khẩu" };
-    // Demo: chấp nhận mọi mật khẩu — sẽ thay bằng xác thực thật khi làm backend
-    setUser(acc);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(acc));
-    return { ok: true };
+  const login = async (username: string, password: string) => {
+    try {
+      const d = await apiPost<{ user: AuthUser; permissions: PermissionMap }>("/api/auth/login", {
+        username,
+        password,
+      });
+      setUser(d.user);
+      setPerms(d.permissions);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Đăng nhập thất bại" };
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await apiPost("/api/auth/logout", {});
+    } catch {}
     setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
+    setPerms(null);
   };
 
   const role: Role = user?.role ?? "staff";
+  // Ưu tiên quyền server trả về (đã tính chỉnh sửa động); fallback ma trận mặc định
+  const canFn = (menu: MenuKey): Permission => perms?.[menu] ?? can(role, menu);
 
   return (
-    <Ctx.Provider value={{ ready, user, role, login, logout, can: (menu) => can(role, menu) }}>
-      {children}
-    </Ctx.Provider>
+    <Ctx.Provider value={{ ready, user, role, login, logout, can: canFn }}>{children}</Ctx.Provider>
   );
 }
 

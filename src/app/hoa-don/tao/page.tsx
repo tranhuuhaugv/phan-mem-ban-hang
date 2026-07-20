@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, FileText, PackageOpen, Plus, Trash2, Search } from "lucide-react";
-import { AccessGuard, BackLink, SectionCard, DemoNoteInline } from "@/components/parts";
+import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { Button, PageHeader, Field, Input, Select, Textarea } from "@/components/ui";
 import { useToast } from "@/components/toast";
-import { orders, machines, machineText } from "@/lib/mock-data";
+import { useApi, apiPost } from "@/lib/api";
+import type { Machine, Order, Invoice } from "@/lib/types";
 import { formatVND } from "@/lib/format";
 
 interface LineItem {
@@ -27,18 +28,33 @@ export default function Page() {
 function Inner() {
   const router = useRouter();
   const toast = useToast();
+  const { data: machinesData } = useApi<Machine[]>("/api/machines");
+  const { data: ordersData } = useApi<Order[]>("/api/orders");
+
   const [mode, setMode] = useState<"order" | "direct">("direct");
   const [items, setItems] = useState<LineItem[]>([]);
   const [query, setQuery] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [orderId, setOrderId] = useState("");
   const [withWarranty, setWithWarranty] = useState(false);
+  const [wMonths, setWMonths] = useState("6");
+  const [wCondition, setWCondition] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const sellable = orders.filter((o) => o.status !== "huy");
-  const inStock = machines.filter((m) => m.status === "ton_kho");
+  const inStock = (machinesData ?? []).filter((m) => m.status === "ton_kho");
+  const sellable = (ordersData ?? []).filter((o) => o.status !== "huy" && o.status !== "da_giao");
   const available = inStock.filter((m) => !items.some((i) => i.serial === m.serial));
   const total = items.reduce((s, i) => s + i.price, 0);
 
   const matches = query.trim()
-    ? available.filter((m) => machineText(m).includes(query.trim().toLowerCase())).slice(0, 6)
+    ? available
+        .filter((m) =>
+          `${m.serial} ${m.brand} ${m.model} ${m.cpu} ${m.ram} ${m.storage} ${m.screen}`
+            .toLowerCase()
+            .includes(query.trim().toLowerCase()),
+        )
+        .slice(0, 6)
     : [];
 
   const addMachine = (serial: string) => {
@@ -53,19 +69,40 @@ function Inner() {
 
   const setPrice = (serial: string, price: number) =>
     setItems((s) => s.map((i) => (i.serial === serial ? { ...i, price } : i)));
-
   const removeItem = (serial: string) => setItems((s) => s.filter((i) => i.serial !== serial));
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === "direct") {
       if (items.length === 0) return toast("Thêm ít nhất 1 sản phẩm vào hoá đơn", "warning");
       if (items.some((i) => !i.price)) return toast("Nhập giá bán cho tất cả sản phẩm", "warning");
+    } else if (!orderId) {
+      return toast("Chọn đơn hàng", "warning");
     }
-    toast(
-      mode === "direct" ? `Đã tạo hoá đơn ${items.length} sản phẩm · ${formatVND(total)} (demo)` : "Đã tạo hoá đơn (demo)",
-    );
-    router.push("/hoa-don");
+    setBusy(true);
+    try {
+      const body =
+        mode === "direct"
+          ? {
+              mode: "direct",
+              customerName,
+              phone,
+              items: items.map((i) => ({ serial: i.serial, price: i.price })),
+              warranty: withWarranty ? { months: Number(wMonths) || 6, condition: wCondition } : undefined,
+            }
+          : {
+              mode: "order",
+              orderId,
+              warranty: withWarranty ? { months: Number(wMonths) || 6, condition: wCondition } : undefined,
+            };
+      const row = await apiPost<Invoice>("/api/invoices", body);
+      toast(`Đã tạo hoá đơn ${row.code} · ${formatVND(row.value)}`);
+      router.push(`/hoa-don/${row.id}`);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Tạo hoá đơn thất bại", "warning");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const pill = (active: boolean) =>
@@ -76,7 +113,7 @@ function Inner() {
   return (
     <div>
       <BackLink href="/hoa-don">Về danh sách hoá đơn</BackLink>
-      <PageHeader title="Tạo hoá đơn" subtitle="Tìm máy theo Mã SP rồi thêm vào hoá đơn — nhiều máy trong 1 hoá đơn" />
+      <PageHeader title="Tạo hoá đơn" subtitle="Tìm máy theo Mã SP/tên/cấu hình rồi thêm vào — máy sẽ chuyển Đã bán, tiền vào sổ quỹ" />
 
       <form onSubmit={submit} className="space-y-3">
         <div className="inline-flex rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5">
@@ -89,60 +126,53 @@ function Inner() {
         </div>
 
         {mode === "order" ? (
-          <SectionCard title="Đơn hàng">
-            <Field label="Chọn đơn bán *" hint="Hoá đơn sẽ gắn với đơn này">
-              <Select defaultValue="" required>
-                <option value="">— Chọn đơn —</option>
-                {sellable.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.code} · {o.customerName} · {formatVND(o.sellPrice)}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </SectionCard>
+          <div className="grid items-start gap-3 lg:grid-cols-2">
+            <SectionCard title="Đơn hàng">
+              <Field label="Chọn đơn bán *" hint="Đơn sẽ chuyển Đã giao, máy chuyển Đã bán, tiền còn lại vào sổ quỹ">
+                <Select value={orderId} onChange={(e) => setOrderId(e.target.value)} required>
+                  <option value="">— Chọn đơn —</option>
+                  {sellable.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.code} · {o.customerName} · {formatVND(o.sellPrice)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </SectionCard>
+            <WarrantyCard
+              withWarranty={withWarranty}
+              setWithWarranty={setWithWarranty}
+              wMonths={wMonths}
+              setWMonths={setWMonths}
+              wCondition={wCondition}
+              setWCondition={setWCondition}
+            />
+          </div>
         ) : (
           <div className="grid items-start gap-3 lg:grid-cols-3">
-            {/* Cột trái: khách hàng + bảo hành */}
             <div className="space-y-3">
               <SectionCard title="Khách hàng">
                 <div className="space-y-3">
                   <Field label="Tên khách">
-                    <Input placeholder="VD: Nguyễn Văn A" />
+                    <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="VD: Nguyễn Văn A (trống = Khách lẻ)" />
                   </Field>
                   <Field label="Số điện thoại">
-                    <Input placeholder="VD: 0901234567" />
+                    <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="VD: 0901234567" />
                   </Field>
                 </div>
               </SectionCard>
-
-              <SectionCard title="Bảo hành (tuỳ chọn)">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={withWarranty}
-                    onChange={(e) => setWithWarranty(e.target.checked)}
-                    className="h-4 w-4 accent-[var(--primary)]"
-                  />
-                  Kèm phiếu bảo hành
-                </label>
-                {withWarranty && (
-                  <div className="mt-3 space-y-3">
-                    <Field label="Thời hạn (tháng)">
-                      <Input type="number" defaultValue={6} />
-                    </Field>
-                    <Field label="Điều kiện bảo hành">
-                      <Textarea rows={2} placeholder="VD: BH phần cứng, 1 đổi 1 trong 15 ngày" />
-                    </Field>
-                  </div>
-                )}
-              </SectionCard>
+              <WarrantyCard
+                withWarranty={withWarranty}
+                setWithWarranty={setWithWarranty}
+                wMonths={wMonths}
+                setWMonths={setWMonths}
+                wCondition={wCondition}
+                setWCondition={setWCondition}
+              />
             </div>
 
-            {/* Cột phải: tìm mã SP + danh sách sản phẩm */}
             <div className="lg:col-span-2">
               <SectionCard title="Sản phẩm trong hoá đơn">
-                {/* Ô tìm theo mã */}
                 <Field label="Tìm sản phẩm theo Mã SP" hint={`${available.length} máy tồn kho có thể thêm`}>
                   <div className="relative">
                     <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
@@ -155,12 +185,11 @@ function Inner() {
                   </div>
                 </Field>
 
-                {/* Kết quả tìm được → bấm để thêm */}
                 {query.trim() && (
                   <div className="mt-2 overflow-hidden rounded-lg border border-[var(--border)]">
                     {matches.length === 0 ? (
                       <p className="px-3 py-3 text-center text-sm text-[var(--muted)]">
-                        Không tìm thấy máy tồn kho khớp mã “{query}”.
+                        Không tìm thấy máy tồn kho khớp “{query}”.
                       </p>
                     ) : (
                       matches.map((m) => (
@@ -185,7 +214,6 @@ function Inner() {
                   </div>
                 )}
 
-                {/* Danh sách sản phẩm đã thêm */}
                 {items.length === 0 ? (
                   <p className="mt-3 rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--muted)]">
                     Chưa có sản phẩm. Gõ mã máy ở trên để tìm và thêm vào hoá đơn.
@@ -248,18 +276,55 @@ function Inner() {
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-2">
-          <DemoNoteInline />
-          <div className="flex gap-2">
-            <Button variant="outline" href="/hoa-don">
-              Huỷ
-            </Button>
-            <Button type="submit">
-              <Save size={16} /> Tạo hoá đơn
-            </Button>
-          </div>
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="outline" href="/hoa-don">
+            Huỷ
+          </Button>
+          <Button type="submit" disabled={busy}>
+            <Save size={16} /> {busy ? "Đang tạo..." : "Tạo hoá đơn"}
+          </Button>
         </div>
       </form>
     </div>
+  );
+}
+
+function WarrantyCard({
+  withWarranty,
+  setWithWarranty,
+  wMonths,
+  setWMonths,
+  wCondition,
+  setWCondition,
+}: {
+  withWarranty: boolean;
+  setWithWarranty: (v: boolean) => void;
+  wMonths: string;
+  setWMonths: (v: string) => void;
+  wCondition: string;
+  setWCondition: (v: string) => void;
+}) {
+  return (
+    <SectionCard title="Bảo hành (tuỳ chọn)">
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={withWarranty}
+          onChange={(e) => setWithWarranty(e.target.checked)}
+          className="h-4 w-4 accent-[var(--primary)]"
+        />
+        Kèm phiếu bảo hành cho các máy trong hoá đơn
+      </label>
+      {withWarranty && (
+        <div className="mt-3 space-y-3">
+          <Field label="Thời hạn (tháng)">
+            <Input type="number" value={wMonths} onChange={(e) => setWMonths(e.target.value)} />
+          </Field>
+          <Field label="Điều kiện bảo hành">
+            <Textarea rows={2} value={wCondition} onChange={(e) => setWCondition(e.target.value)} placeholder="VD: BH phần cứng, 1 đổi 1 trong 15 ngày" />
+          </Field>
+        </div>
+      )}
+    </SectionCard>
   );
 }

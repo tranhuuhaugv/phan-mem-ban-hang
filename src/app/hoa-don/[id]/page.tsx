@@ -1,11 +1,23 @@
 "use client";
 
 import { use } from "react";
-import { Printer, ShieldCheck } from "lucide-react";
+import { Printer, ShieldCheck, Loader2 } from "lucide-react";
 import { AccessGuard, BackLink } from "@/components/parts";
 import { Button, PageHeader, Card } from "@/components/ui";
-import { invoices, orders, machines, warranties } from "@/lib/mock-data";
+import { useApi } from "@/lib/api";
 import { formatVND, formatDate, formatDateTime } from "@/lib/format";
+
+interface InvoiceDetail {
+  id: string;
+  code: string;
+  orderCode: string;
+  customerName: string;
+  phone: string;
+  value: number;
+  date: string;
+  items: { id: string; serial: string; name: string; config: string; price: number }[];
+  warranties: { id: string; serial: string; months: number; condition: string; startDate: string }[];
+}
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -17,18 +29,23 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 }
 
 function Inner({ id }: { id: string }) {
-  const iv = invoices.find((i) => i.id === id);
-  if (!iv) {
+  const { data: iv, loading, error } = useApi<InvoiceDetail>(`/api/invoices/${id}`);
+
+  if (loading) {
     return (
-      <div>
-        <BackLink href="/hoa-don">Về danh sách hoá đơn</BackLink>
-        <Card className="p-8 text-center text-sm text-[var(--muted)]">Không tìm thấy hoá đơn.</Card>
+      <div className="grid min-h-[40vh] place-items-center">
+        <Loader2 className="animate-spin text-[var(--muted)]" />
       </div>
     );
   }
-  const order = orders.find((o) => o.code === iv.orderCode);
-  const machine = order ? machines.find((m) => m.serial === order.serial) : undefined;
-  const warranty = warranties.find((w) => w.invoiceCode === iv.code);
+  if (error || !iv) {
+    return (
+      <div>
+        <BackLink href="/hoa-don">Về danh sách hoá đơn</BackLink>
+        <Card className="p-8 text-center text-sm text-[var(--muted)]">{error ?? "Không tìm thấy hoá đơn."}</Card>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -63,11 +80,11 @@ function Inner({ id }: { id: string }) {
           <div>
             <div className="text-[var(--muted)]">Khách hàng</div>
             <div className="font-medium">{iv.customerName}</div>
-            {order && <div className="text-[var(--muted)]">{order.phone}</div>}
+            {iv.phone && <div className="text-[var(--muted)]">{iv.phone}</div>}
           </div>
           <div className="text-right">
             <div className="text-[var(--muted)]">Đơn hàng</div>
-            <div className="font-mono font-medium">{iv.orderCode}</div>
+            <div className="font-mono font-medium">{iv.orderCode || "Bán trực tiếp"}</div>
           </div>
         </div>
 
@@ -80,25 +97,23 @@ function Inner({ id }: { id: string }) {
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b border-[var(--border)]">
-              <td className="py-3">
-                <div className="font-medium">{order?.model ?? "Laptop"}</div>
-                {machine && (
-                  <div className="text-xs text-[var(--muted)]">
-                    {machine.cpu} · {machine.ram} · {machine.storage}
-                  </div>
-                )}
-              </td>
-              <td className="py-3 font-mono text-xs">{order?.serial ?? "—"}</td>
-              <td className="py-3 text-right font-medium">{formatVND(iv.value)}</td>
-            </tr>
+            {iv.items.map((it) => (
+              <tr key={it.id} className="border-b border-[var(--border)]">
+                <td className="py-3">
+                  <div className="font-medium">{it.name}</div>
+                  {it.config && <div className="text-xs text-[var(--muted)]">{it.config}</div>}
+                </td>
+                <td className="py-3 font-mono text-xs">{it.serial || "—"}</td>
+                <td className="py-3 text-right font-medium">{formatVND(it.price)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
 
         <div className="mt-4 flex justify-end">
-          <div className="w-56 space-y-1 text-sm">
+          <div className="w-64 space-y-1 text-sm">
             <div className="flex justify-between">
-              <span className="text-[var(--muted)]">Tạm tính</span>
+              <span className="text-[var(--muted)]">Tạm tính ({iv.items.length} sản phẩm)</span>
               <span>{formatVND(iv.value)}</span>
             </div>
             <div className="flex justify-between border-t border-[var(--border)] pt-1 text-base font-bold">
@@ -108,15 +123,17 @@ function Inner({ id }: { id: string }) {
           </div>
         </div>
 
-        {warranty && (
+        {iv.warranties.length > 0 && (
           <div className="mt-6 rounded-lg border border-[var(--border)] p-3 text-sm">
             <div className="mb-1 flex items-center gap-1.5 font-medium">
               <ShieldCheck size={15} className="text-[var(--success)]" /> Phiếu bảo hành
             </div>
-            <div className="text-[var(--muted)]">
-              Mã SP {warranty.serial} · {warranty.months} tháng kể từ {formatDate(warranty.startDate)}
-            </div>
-            <div className="text-[var(--muted)]">Điều kiện: {warranty.condition}</div>
+            {iv.warranties.map((w) => (
+              <div key={w.id} className="text-[var(--muted)]">
+                Mã SP {w.serial || "—"} · {w.months} tháng kể từ {formatDate(w.startDate)}
+                {w.condition ? ` · ${w.condition}` : ""}
+              </div>
+            ))}
           </div>
         )}
 

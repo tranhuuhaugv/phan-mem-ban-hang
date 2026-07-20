@@ -6,7 +6,8 @@ import Link from "next/link";
 import { AccessGuard } from "@/components/parts";
 import { Button, PageHeader, Table, Tr, Td, EmptyState, SearchInput } from "@/components/ui";
 import { useRole } from "@/components/role-context";
-import { invoices } from "@/lib/mock-data";
+import { useApi } from "@/lib/api";
+import type { Invoice } from "@/lib/types";
 import { formatVND, formatDateTime } from "@/lib/format";
 
 export default function Page() {
@@ -19,8 +20,9 @@ export default function Page() {
 
 function Inner() {
   const { can } = useRole();
+  const { data, loading } = useApi<Invoice[]>("/api/invoices");
   const [q, setQ] = useState("");
-  const rows = invoices.filter((iv) =>
+  const rows = (data ?? []).filter((iv) =>
     `${iv.code} ${iv.orderCode} ${iv.customerName}`.toLowerCase().includes(q.trim().toLowerCase()),
   );
   return (
@@ -40,7 +42,7 @@ function Inner() {
         <SearchInput value={q} onChange={setQ} placeholder="Tìm mã hoá đơn, đơn hàng, khách hàng..." />
       </div>
       {rows.length === 0 ? (
-        <EmptyState text={q ? "Không tìm thấy hoá đơn phù hợp" : "Chưa có hoá đơn nào"} />
+        <EmptyState text={loading ? "Đang tải dữ liệu..." : q ? "Không tìm thấy hoá đơn phù hợp" : "Chưa có hoá đơn nào"} />
       ) : (
         <Table head={["Mã hoá đơn", "Đơn hàng", "Khách hàng", "Giá trị", "Ngày lập", ""]}>
           {rows.map((iv) => (

@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save } from "lucide-react";
-import { AccessGuard, BackLink, FormGrid, SectionCard, DemoNote } from "@/components/parts";
+import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { Button, PageHeader, Field, Input, Textarea } from "@/components/ui";
 import { useToast } from "@/components/toast";
+import { apiPost } from "@/lib/api";
+import type { BuyReceipt } from "@/lib/types";
 
 export default function Page() {
   return (
@@ -17,53 +20,66 @@ export default function Page() {
 function Inner() {
   const router = useRouter();
   const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const [f, setF] = useState({ customerName: "", phone: "", model: "", config: "", price: "", condition: "" });
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setF((s) => ({ ...s, [k]: e.target.value }));
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const row = await apiPost<BuyReceipt>("/api/buy-receipts", { ...f, price: Number(f.price) || 0 });
+      toast(`Đã tạo phiếu ${row.code} — chờ duyệt`);
+      router.push("/thu-may");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Tạo phiếu thất bại", "warning");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div>
       <BackLink href="/thu-may">Về danh sách phiếu</BackLink>
       <PageHeader title="Tạo phiếu thu máy" subtitle="Ghi nhận máy mua lại từ khách — phiếu sẽ ở trạng thái Chờ duyệt" />
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          toast("Đã tạo phiếu thu máy — chờ duyệt (demo)");
-          router.push("/thu-may");
-        }}
-        className="space-y-4"
-      >
-        <SectionCard title="Thông tin khách">
-          <FormGrid>
-            <Field label="Tên khách">
-              <Input placeholder="VD: Nguyễn Văn Tuấn" required />
-            </Field>
-            <Field label="Số điện thoại">
-              <Input placeholder="VD: 0901234567" />
-            </Field>
-          </FormGrid>
-        </SectionCard>
-        <SectionCard title="Thông tin máy thu">
-          <FormGrid>
-            <Field label="Model">
-              <Input placeholder="VD: HP EliteBook 840 G8" required />
-            </Field>
-            <Field label="Cấu hình">
-              <Input placeholder="VD: i7/16GB/512GB" />
-            </Field>
-            <Field label="Giá thu (₫)">
-              <Input type="number" placeholder="VD: 11200000" required />
-            </Field>
-          </FormGrid>
-          <div className="mt-4">
-            <Field label="Tình trạng máy">
-              <Textarea rows={2} placeholder="VD: Đẹp 98%, pin tốt, còn BH hãng..." />
-            </Field>
-          </div>
-        </SectionCard>
-        <DemoNote />
+      <form onSubmit={submit} className="space-y-3">
+        <div className="grid items-start gap-3 lg:grid-cols-2">
+          <SectionCard title="Thông tin khách">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Tên khách *">
+                <Input value={f.customerName} onChange={set("customerName")} placeholder="VD: Nguyễn Văn Tuấn" required />
+              </Field>
+              <Field label="Số điện thoại">
+                <Input value={f.phone} onChange={set("phone")} placeholder="VD: 0901234567" />
+              </Field>
+            </div>
+          </SectionCard>
+          <SectionCard title="Thông tin máy thu">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Model *">
+                <Input value={f.model} onChange={set("model")} placeholder="VD: HP EliteBook 840 G8" required />
+              </Field>
+              <Field label="Cấu hình">
+                <Input value={f.config} onChange={set("config")} placeholder="VD: i7/16GB/512GB" />
+              </Field>
+              <Field label="Giá thu (₫) *">
+                <Input type="number" value={f.price} onChange={set("price")} placeholder="VD: 11200000" required />
+              </Field>
+            </div>
+            <div className="mt-3">
+              <Field label="Tình trạng máy">
+                <Textarea rows={2} value={f.condition} onChange={set("condition")} placeholder="VD: Đẹp 98%, pin tốt, còn BH hãng..." />
+              </Field>
+            </div>
+          </SectionCard>
+        </div>
         <div className="flex justify-end gap-2">
           <Button variant="outline" href="/thu-may">
             Huỷ
           </Button>
-          <Button type="submit">
-            <Save size={16} /> Tạo phiếu
+          <Button type="submit" disabled={busy}>
+            <Save size={16} /> {busy ? "Đang tạo..." : "Tạo phiếu"}
           </Button>
         </div>
       </form>

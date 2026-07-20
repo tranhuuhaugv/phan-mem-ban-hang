@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, CheckCircle2, Eye } from "lucide-react";
+import { Plus, CheckCircle2 } from "lucide-react";
 import { AccessGuard, DetailRow } from "@/components/parts";
 import { Button, PageHeader, Table, Tr, Td, Field, Input, Select, SearchInput } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { BuyStatusBadge } from "@/components/status";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
-import { buyReceipts } from "@/lib/mock-data";
+import { useApi, apiPost } from "@/lib/api";
 import { formatVND, formatDateTime } from "@/lib/format";
 import { BUY_STATUS_LABEL, type BuyReceipt, type BuyReceiptStatus } from "@/lib/types";
 
@@ -24,16 +24,34 @@ function Inner() {
   const { can } = useRole();
   const perm = can("thu-may");
   const toast = useToast();
+  const { data, loading, reload } = useApi<BuyReceipt[]>("/api/buy-receipts");
   const [approve, setApprove] = useState<BuyReceipt | null>(null);
   const [serial, setSerial] = useState("");
+  const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<BuyReceiptStatus | "all">("all");
-  const rows = buyReceipts.filter((b) => {
+
+  const rows = (data ?? []).filter((b) => {
     if (status !== "all" && b.status !== status) return false;
     return `${b.code} ${b.customerName} ${b.phone} ${b.model} ${b.config}`
       .toLowerCase()
       .includes(q.trim().toLowerCase());
   });
+
+  const doApprove = async () => {
+    if (!approve) return;
+    setBusy(true);
+    try {
+      const res = await apiPost<{ machineSerial: string }>(`/api/buy-receipts/${approve.id}/approve`, { serial });
+      toast(`Đã duyệt ${approve.code} — máy ${res.machineSerial} được đẩy vào kho`);
+      setApprove(null);
+      reload();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Duyệt thất bại", "warning");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div>
@@ -90,17 +108,22 @@ function Inner() {
                   >
                     <CheckCircle2 size={15} /> Duyệt
                   </Button>
-                ) : b.status === "cho_duyet" && !perm.approve ? (
+                ) : b.status === "cho_duyet" ? (
                   <span className="text-xs text-[var(--muted)]">Chờ Admin/Quản lý duyệt</span>
-                ) : (
-                  <Button size="sm" variant="ghost">
-                    <Eye size={15} />
-                  </Button>
-                )}
+                ) : b.serial ? (
+                  <span className="font-mono text-xs text-[var(--primary)]">{b.serial}</span>
+                ) : null}
               </div>
             </Td>
           </Tr>
         ))}
+        {rows.length === 0 && (
+          <Tr>
+            <Td className="text-center text-[var(--muted)]">
+              <div className="py-6">{loading ? "Đang tải dữ liệu..." : "Chưa có phiếu nào"}</div>
+            </Td>
+          </Tr>
+        )}
       </Table>
 
       <Modal
@@ -112,17 +135,8 @@ function Inner() {
             <Button variant="outline" onClick={() => setApprove(null)}>
               Huỷ
             </Button>
-            <Button
-              onClick={() => {
-                if (!serial.trim()) {
-                  toast("Nhập Mã SP để gán cho máy", "warning");
-                  return;
-                }
-                toast(`Đã duyệt ${approve?.code} — máy ${serial} được đẩy vào kho (demo)`);
-                setApprove(null);
-              }}
-            >
-              <CheckCircle2 size={16} /> Duyệt & đẩy vào kho
+            <Button onClick={doApprove} disabled={busy}>
+              <CheckCircle2 size={16} /> {busy ? "Đang duyệt..." : "Duyệt & đẩy vào kho"}
             </Button>
           </>
         }
@@ -135,8 +149,8 @@ function Inner() {
             <DetailRow label="Tình trạng">{approve.condition}</DetailRow>
             <DetailRow label="Giá thu">{formatVND(approve.price)}</DetailRow>
             <div className="mt-4">
-              <Field label="Gán Mã SP cho máy *" hint="Duyệt phiếu = xác nhận chi tiền và tạo máy mới trong kho">
-                <Input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="VD: SP0009" />
+              <Field label="Gán Mã SP cho máy" hint="Bỏ trống = tự sinh mã kế tiếp. Duyệt = xác nhận chi tiền + tạo máy trong kho.">
+                <Input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="VD: SP0009 (tuỳ chọn)" />
               </Field>
             </div>
           </div>

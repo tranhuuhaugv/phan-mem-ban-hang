@@ -1,0 +1,248 @@
+// Schema database — Phần mềm quản lý kho laptop nội bộ
+// Bảng khớp với kiểu nghiệp vụ ở src/lib/types.ts
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ===== Enums =====
+
+enum Role {
+  admin
+  manager
+  staff
+}
+
+enum MachineStatus {
+  ton_kho
+  dat_coc
+  dang_sua
+  da_ban
+  bao_hanh
+}
+
+enum Condition {
+  cu
+  like_new
+  new
+}
+
+enum BuyReceiptStatus {
+  cho_duyet
+  da_duyet
+  tu_choi
+}
+
+enum OrderStatus {
+  cho_coc
+  da_coc
+  da_giao
+  huy
+}
+
+enum RepairStatus {
+  dang_sua
+  cho_linh_kien
+  hoan_tat
+}
+
+enum CashType {
+  thu
+  chi
+}
+
+enum AccountStatus {
+  active
+  locked
+}
+
+// ===== Bảng =====
+
+// Máy trong kho — serial = Mã SP, khoá duy nhất
+model Machine {
+  id            String        @id @default(cuid())
+  serial        String        @unique
+  brand         String
+  model         String
+  cpu           String
+  ram           String
+  storage       String
+  screen        String
+  condition     Condition
+  purchasePrice Int
+  source        String
+  status        MachineStatus @default(ton_kho)
+  note          String?
+  createdAt     DateTime      @default(now())
+
+  orders       Order[]
+  repairs      Repair[]
+  warranties   Warranty[]
+  invoiceItems InvoiceItem[]
+  buyReceipt   BuyReceipt?
+}
+
+// Danh mục chuẩn hoá Hãng/Model/Cấu hình
+model Category {
+  id      String    @id @default(cuid())
+  brand   String
+  model   String
+  cpu     String
+  ram     String
+  storage String
+  type    Condition
+}
+
+// Phiếu thu máy (mua lại máy cũ từ khách)
+model BuyReceipt {
+  id           String           @id @default(cuid())
+  code         String           @unique
+  customerName String
+  phone        String
+  model        String
+  config       String
+  condition    String
+  price        Int
+  status       BuyReceiptStatus @default(cho_duyet)
+  createdAt    DateTime         @default(now())
+
+  // Duyệt phiếu → tạo máy trong kho, gán vào đây
+  machineId String?  @unique
+  machine   Machine? @relation(fields: [machineId], references: [id])
+}
+
+// Đơn đặt hàng — gán máy cụ thể chống bán trùng
+model Order {
+  id           String      @id @default(cuid())
+  code         String      @unique
+  customerName String
+  phone        String
+  sellPrice    Int
+  deposit      Int         @default(0)
+  status       OrderStatus @default(cho_coc)
+  createdAt    DateTime    @default(now())
+
+  machineId String?
+  machine   Machine? @relation(fields: [machineId], references: [id])
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  invoices Invoice[]
+}
+
+// Phiếu sửa chữa
+model Repair {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  errorDesc   String
+  estCost     Int
+  actualCost  Int?
+  technician  String?
+  receiveDate DateTime     @default(now())
+  returnDate  DateTime?
+  status      RepairStatus @default(dang_sua)
+
+  machineId String?
+  machine   Machine? @relation(fields: [machineId], references: [id])
+}
+
+// Phiếu thu / chi
+model CashFlow {
+  id       String   @id @default(cuid())
+  code     String   @unique
+  type     CashType
+  date     DateTime @default(now())
+  amount   Int
+  content  String
+  category String
+  partner  String?
+}
+
+// Hoá đơn — có thể gắn đơn hàng hoặc bán trực tiếp, nhiều sản phẩm
+model Invoice {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  customerName String
+  phone        String?
+  total        Int
+  createdAt    DateTime @default(now())
+
+  orderId String?
+  order   Order?  @relation(fields: [orderId], references: [id])
+
+  items      InvoiceItem[]
+  warranties Warranty[]
+}
+
+// Dòng sản phẩm trong hoá đơn
+model InvoiceItem {
+  id     String @id @default(cuid())
+  name   String
+  config String
+  price  Int
+
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  machineId String?
+  machine   Machine? @relation(fields: [machineId], references: [id])
+}
+
+// Phiếu bảo hành
+model Warranty {
+  id        String   @id @default(cuid())
+  months    Int
+  condition String
+  startDate DateTime @default(now())
+
+  machineId String?
+  machine   Machine? @relation(fields: [machineId], references: [id])
+
+  invoiceId String?
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id])
+}
+
+// Khách hàng
+model Customer {
+  id      String  @id @default(cuid())
+  name    String
+  phone   String  @unique
+  address String?
+  note    String?
+
+  orders Order[]
+}
+
+// Quyền theo vai trò + menu (chỉ lưu cho manager/staff — admin luôn toàn quyền)
+model RolePermission {
+  id        String  @id @default(cuid())
+  role      Role
+  menu      String
+  view      Boolean @default(false)
+  create    Boolean @default(false)
+  edit      Boolean @default(false)
+  remove    Boolean @default(false)
+  approve   Boolean @default(false)
+  seeProfit Boolean @default(false)
+  seeReport Boolean @default(false)
+
+  @@unique([role, menu])
+}
+
+// Tài khoản đăng nhập
+model Account {
+  id           String        @id @default(cuid())
+  username     String        @unique
+  passwordHash String
+  fullName     String
+  role         Role          @default(staff)
+  status       AccountStatus @default(active)
+  lastLogin    DateTime?
+  createdAt    DateTime      @default(now())
+}

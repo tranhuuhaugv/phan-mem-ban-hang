@@ -4,22 +4,28 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus, Search, Trash2, Pencil, History, Cpu } from "lucide-react";
 import { Button, PageHeader, Table, Tr, Td, Input, Select, Badge } from "@/components/ui";
+import { ConfirmDialog } from "@/components/modal";
 import { MachineStatusBadge } from "@/components/status";
 import { useRole } from "@/components/role-context";
-import { machines } from "@/lib/mock-data";
-import { CONDITION_LABEL, MACHINE_STATUS_LABEL, type MachineStatus } from "@/lib/types";
+import { useToast } from "@/components/toast";
+import { useApi, apiDelete } from "@/lib/api";
+import { CONDITION_LABEL, MACHINE_STATUS_LABEL, type Machine, type MachineStatus } from "@/lib/types";
 import { formatVND, formatDateTime } from "@/lib/format";
 
 export default function KhoPage() {
   const { can } = useRole();
   const perm = can("kho");
+  const toast = useToast();
+  const { data, loading, reload } = useApi<Machine[]>("/api/machines");
+  const machines = useMemo(() => data ?? [], [data]);
   const [maSP, setMaSP] = useState("");
   const [ten, setTen] = useState("");
   const [cauHinh, setCauHinh] = useState("");
   const [status, setStatus] = useState<MachineStatus | "all">("all");
   const [brand, setBrand] = useState<string>("all");
+  const [del, setDel] = useState<Machine | null>(null);
 
-  const brands = useMemo(() => Array.from(new Set(machines.map((m) => m.brand))).sort(), []);
+  const brands = useMemo(() => Array.from(new Set(machines.map((m) => m.brand))).sort(), [machines]);
 
   const rows = useMemo(() => {
     const qMa = maSP.trim().toLowerCase();
@@ -33,7 +39,7 @@ export default function KhoPage() {
       if (qCh && !`${m.cpu} ${m.ram} ${m.storage} ${m.screen}`.toLowerCase().includes(qCh)) return false;
       return true;
     });
-  }, [maSP, ten, cauHinh, status, brand]);
+  }, [machines, maSP, ten, cauHinh, status, brand]);
 
   return (
     <div>
@@ -120,7 +126,7 @@ export default function KhoPage() {
                   </Button>
                 )}
                 {perm.remove && (
-                  <Button size="sm" variant="ghost" className="text-[var(--danger)]">
+                  <Button size="sm" variant="ghost" className="text-[var(--danger)]" onClick={() => setDel(m)}>
                     <Trash2 size={15} />
                   </Button>
                 )}
@@ -131,11 +137,30 @@ export default function KhoPage() {
         {rows.length === 0 && (
           <Tr>
             <Td className="text-center text-[var(--muted)]">
-              <div className="py-6">Không tìm thấy máy nào phù hợp</div>
+              <div className="py-6">{loading ? "Đang tải dữ liệu..." : "Không tìm thấy máy nào phù hợp"}</div>
             </Td>
           </Tr>
         )}
       </Table>
+
+      <ConfirmDialog
+        open={!!del}
+        onClose={() => setDel(null)}
+        onConfirm={async () => {
+          if (!del) return;
+          try {
+            await apiDelete(`/api/machines/${del.serial}`);
+            toast(`Đã xoá máy ${del.serial}`);
+            reload();
+          } catch (e) {
+            toast(e instanceof Error ? e.message : "Xoá thất bại", "warning");
+          }
+        }}
+        title="Xoá máy khỏi kho"
+        message={del ? `Xoá máy ${del.serial} — ${del.brand} ${del.model}? Hành động này không hoàn tác được.` : ""}
+        confirmText="Xoá"
+        danger
+      />
     </div>
   );
 }

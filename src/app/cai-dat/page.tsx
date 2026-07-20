@@ -7,8 +7,8 @@ import { AccessGuard } from "@/components/parts";
 import { Button, PageHeader, Table, Tr, Td, Badge, Field, Input, Select, Card } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { useToast } from "@/components/toast";
-import { accounts } from "@/lib/mock-data";
-import { ROLE_LABEL, type Role } from "@/lib/types";
+import { useApi, apiPost, apiPatch } from "@/lib/api";
+import { ROLE_LABEL, type Account, type Role } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
 
 export default function Page() {
@@ -21,7 +21,58 @@ export default function Page() {
 
 function Inner() {
   const toast = useToast();
+  const { data, loading, reload } = useApi<Account[]>("/api/accounts");
   const [openForm, setOpenForm] = useState(false);
+  const [resetFor, setResetFor] = useState<Account | null>(null);
+  const [newPass, setNewPass] = useState("");
+  const [f, setF] = useState({ username: "", password: "", fullName: "", role: "staff" });
+  const [busy, setBusy] = useState(false);
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setF((s) => ({ ...s, [k]: e.target.value }));
+
+  const create = async () => {
+    setBusy(true);
+    try {
+      await apiPost("/api/accounts", f);
+      toast(`Đã tạo tài khoản ${f.username}`);
+      setOpenForm(false);
+      setF({ username: "", password: "", fullName: "", role: "staff" });
+      reload();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Tạo thất bại", "warning");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleLock = async (a: Account) => {
+    try {
+      await apiPatch(`/api/accounts/${a.id}`, { status: a.status === "active" ? "locked" : "active" });
+      toast(a.status === "active" ? `Đã khoá ${a.username}` : `Đã mở khoá ${a.username}`);
+      reload();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Thất bại", "warning");
+    }
+  };
+
+  const resetPassword = async () => {
+    if (!resetFor) return;
+    if (!newPass.trim() || newPass.length < 6) {
+      toast("Mật khẩu tối thiểu 6 ký tự", "warning");
+      return;
+    }
+    setBusy(true);
+    try {
+      await apiPatch(`/api/accounts/${resetFor.id}`, { password: newPass });
+      toast(`Đã đặt lại mật khẩu cho ${resetFor.username}`);
+      setResetFor(null);
+      setNewPass("");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Thất bại", "warning");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div>
@@ -58,7 +109,7 @@ function Inner() {
 
       <Card className="mb-2 px-4 py-3 font-medium">Danh sách tài khoản</Card>
       <Table head={["Tên đăng nhập", "Họ tên", "Vai trò", "Trạng thái", "Đăng nhập cuối", ""]}>
-        {accounts.map((a) => (
+        {(data ?? []).map((a) => (
           <Tr key={a.id}>
             <Td className="font-mono text-xs font-medium">{a.username}</Td>
             <Td>{a.fullName}</Td>
@@ -71,14 +122,14 @@ function Inner() {
             <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{a.lastLogin ? formatDateTime(a.lastLogin) : "—"}</Td>
             <Td>
               <div className="flex items-center justify-end gap-1">
-                <Button size="sm" variant="ghost" onClick={() => toast("Đã đặt lại mật khẩu (demo)")}>
+                <Button size="sm" variant="ghost" onClick={() => setResetFor(a)}>
                   <KeyRound size={15} />
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
                   className={a.status === "active" ? "text-[var(--danger)]" : "text-[var(--success)]"}
-                  onClick={() => toast(a.status === "active" ? "Đã khoá tài khoản (demo)" : "Đã mở khoá (demo)")}
+                  onClick={() => toggleLock(a)}
                 >
                   {a.status === "active" ? <Lock size={15} /> : <Unlock size={15} />}
                 </Button>
@@ -86,6 +137,13 @@ function Inner() {
             </Td>
           </Tr>
         ))}
+        {(data ?? []).length === 0 && (
+          <Tr>
+            <Td className="text-center text-[var(--muted)]">
+              <div className="py-6">{loading ? "Đang tải dữ liệu..." : "Chưa có tài khoản"}</div>
+            </Td>
+          </Tr>
+        )}
       </Table>
 
       <Modal
@@ -97,29 +155,24 @@ function Inner() {
             <Button variant="outline" onClick={() => setOpenForm(false)}>
               Huỷ
             </Button>
-            <Button
-              onClick={() => {
-                setOpenForm(false);
-                toast("Đã tạo tài khoản (demo)");
-              }}
-            >
-              Tạo tài khoản
+            <Button onClick={create} disabled={busy}>
+              {busy ? "Đang tạo..." : "Tạo tài khoản"}
             </Button>
           </>
         }
       >
         <div className="space-y-3">
-          <Field label="Tên đăng nhập">
-            <Input placeholder="VD: nhanvien03" />
+          <Field label="Tên đăng nhập *">
+            <Input value={f.username} onChange={set("username")} placeholder="VD: nhanvien03" />
           </Field>
-          <Field label="Mật khẩu">
-            <Input type="password" placeholder="••••••••" />
+          <Field label="Mật khẩu *" hint="Tối thiểu 6 ký tự">
+            <Input type="password" value={f.password} onChange={set("password")} placeholder="••••••••" />
           </Field>
-          <Field label="Họ tên">
-            <Input placeholder="VD: Trần Văn B" />
+          <Field label="Họ tên *">
+            <Input value={f.fullName} onChange={set("fullName")} placeholder="VD: Trần Văn B" />
           </Field>
           <Field label="Vai trò">
-            <Select defaultValue="staff">
+            <Select value={f.role} onChange={set("role")}>
               {(Object.keys(ROLE_LABEL) as Role[]).map((r) => (
                 <option key={r} value={r}>
                   {ROLE_LABEL[r]}
@@ -128,6 +181,26 @@ function Inner() {
             </Select>
           </Field>
         </div>
+      </Modal>
+
+      <Modal
+        open={!!resetFor}
+        onClose={() => setResetFor(null)}
+        title={`Đặt lại mật khẩu — ${resetFor?.username ?? ""}`}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setResetFor(null)}>
+              Huỷ
+            </Button>
+            <Button onClick={resetPassword} disabled={busy}>
+              {busy ? "Đang lưu..." : "Đặt lại mật khẩu"}
+            </Button>
+          </>
+        }
+      >
+        <Field label="Mật khẩu mới" hint="Tối thiểu 6 ký tự">
+          <Input type="password" value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="••••••••" />
+        </Field>
       </Modal>
     </div>
   );

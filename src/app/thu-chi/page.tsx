@@ -4,7 +4,8 @@ import { useState } from "react";
 import { ArrowDownCircle, ArrowUpCircle, FileBarChart } from "lucide-react";
 import { AccessGuard } from "@/components/parts";
 import { Button, PageHeader, Table, Tr, Td, Card, Badge, Select, SearchInput } from "@/components/ui";
-import { cashFlows } from "@/lib/mock-data";
+import { useApi } from "@/lib/api";
+import type { CashFlow } from "@/lib/types";
 import { formatVND, formatDateTime } from "@/lib/format";
 import type { CashType } from "@/lib/types";
 
@@ -17,6 +18,8 @@ export default function Page() {
 }
 
 function Inner() {
+  const { data } = useApi<CashFlow[]>("/api/cashflows");
+  const cashFlows = data ?? [];
   const [filter, setFilter] = useState<CashType | "all">("all");
   const [q, setQ] = useState("");
   const totalThu = cashFlows.filter((c) => c.type === "thu").reduce((s, c) => s + c.amount, 0);
@@ -49,17 +52,17 @@ function Inner() {
       />
 
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="p-4">
-          <p className="text-sm text-[var(--muted)]">Tổng thu</p>
-          <p className="mt-1 text-2xl font-semibold text-[var(--success)]">{formatVND(totalThu)}</p>
+        <Card className="p-4" style={{ background: "linear-gradient(135deg, #05966914, var(--surface) 55%)", borderColor: "#05966930" }}>
+          <p className="text-sm font-medium text-[var(--success)]">Tổng thu</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--success)]">{formatVND(totalThu)}</p>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm text-[var(--muted)]">Tổng chi</p>
-          <p className="mt-1 text-2xl font-semibold text-[var(--danger)]">{formatVND(totalChi)}</p>
+        <Card className="p-4" style={{ background: "linear-gradient(135deg, #e11d4814, var(--surface) 55%)", borderColor: "#e11d4830" }}>
+          <p className="text-sm font-medium text-[var(--danger)]">Tổng chi</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--danger)]">{formatVND(totalChi)}</p>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm text-[var(--muted)]">Tồn quỹ</p>
-          <p className="mt-1 text-2xl font-semibold">{formatVND(totalThu - totalChi)}</p>
+        <Card className="p-4" style={{ background: "linear-gradient(135deg, #4f46e514, var(--surface) 55%)", borderColor: "#4f46e530" }}>
+          <p className="text-sm font-medium text-[var(--primary)]">Tồn quỹ</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--primary)]">{formatVND(totalThu - totalChi)}</p>
         </Card>
       </div>
 

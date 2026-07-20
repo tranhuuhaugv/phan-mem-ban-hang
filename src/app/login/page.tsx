@@ -6,7 +6,6 @@ import { Laptop, Lock, User, LogIn, Boxes, ShieldCheck, Wallet } from "lucide-re
 import { Button, Field, Input } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
-import { ROLE_LABEL } from "@/lib/types";
 
 const QUICK = [
   { username: "admin", label: "Admin", desc: "Toàn quyền" },
@@ -21,9 +20,13 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const doLogin = (u: string, p: string) => {
-    const res = login(u, p);
+  const doLogin = async (u: string, p: string) => {
+    if (busy) return;
+    setBusy(true);
+    const res = await login(u, p);
+    setBusy(false);
     if (!res.ok) {
       setError(res.error ?? "Đăng nhập thất bại");
       return;
@@ -117,14 +120,14 @@ export default function LoginPage() {
               <p className="rounded-lg bg-[var(--danger-bg)] px-3 py-2 text-sm text-[var(--danger)]">{error}</p>
             )}
 
-            <Button type="submit" className="w-full">
-              <LogIn size={16} /> Đăng nhập
+            <Button type="submit" className="w-full" disabled={busy}>
+              <LogIn size={16} /> {busy ? "Đang đăng nhập..." : "Đăng nhập"}
             </Button>
           </form>
 
           <div className="my-6 flex items-center gap-3 text-xs text-[var(--muted)]">
             <div className="h-px flex-1 bg-[var(--border)]" />
-            Đăng nhập nhanh (demo)
+            Đăng nhập nhanh
             <div className="h-px flex-1 bg-[var(--border)]" />
           </div>
 
@@ -132,7 +135,7 @@ export default function LoginPage() {
             {QUICK.map((q) => (
               <button
                 key={q.username}
-                onClick={() => doLogin(q.username, "demo")}
+                onClick={() => doLogin(q.username, "123456")}
                 className="card p-3 text-center transition-colors hover:border-[var(--primary)] hover:bg-[var(--surface-2)]"
               >
                 <div className="text-sm font-medium">{q.label}</div>
@@ -142,7 +145,7 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-6 text-center text-xs text-[var(--muted)]">
-            Bản demo: mật khẩu nhập bất kỳ. Xác thực thật sẽ thêm khi làm backend.
+            Mật khẩu mặc định các tài khoản mẫu: 123456 — đổi trong Cài đặt.
           </p>
         </div>
       </div>

@@ -5,7 +5,8 @@ import { ClipboardCheck, Check } from "lucide-react";
 import { AccessGuard, BackLink } from "@/components/parts";
 import { Button, PageHeader, Table, Tr, Td, Card, Badge } from "@/components/ui";
 import { useToast } from "@/components/toast";
-import { machines } from "@/lib/mock-data";
+import { useApi } from "@/lib/api";
+import type { Machine } from "@/lib/types";
 
 export default function Page() {
   return (
@@ -17,8 +18,9 @@ export default function Page() {
 
 function Inner() {
   const toast = useToast();
+  const { data } = useApi<Machine[]>("/api/machines");
   // Chỉ kiểm kê máy còn trong kho (không tính đã bán)
-  const list = machines.filter((m) => m.status !== "da_ban");
+  const list = (data ?? []).filter((m) => m.status !== "da_ban");
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const done = list.filter((m) => checked[m.id]).length;
 
@@ -39,17 +41,17 @@ function Inner() {
       />
 
       <div className="mb-4 grid grid-cols-3 gap-4">
-        <Card className="p-4">
-          <p className="text-sm text-[var(--muted)]">Theo hệ thống</p>
-          <p className="mt-1 text-2xl font-semibold">{list.length}</p>
+        <Card className="p-4" style={{ background: "linear-gradient(135deg, #4f46e514, var(--surface) 55%)", borderColor: "#4f46e530" }}>
+          <p className="text-sm font-medium text-[var(--primary)]">Theo hệ thống</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--primary)]">{list.length}</p>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm text-[var(--muted)]">Đã kiểm đếm</p>
-          <p className="mt-1 text-2xl font-semibold text-[var(--success)]">{done}</p>
+        <Card className="p-4" style={{ background: "linear-gradient(135deg, #05966914, var(--surface) 55%)", borderColor: "#05966930" }}>
+          <p className="text-sm font-medium text-[var(--success)]">Đã kiểm đếm</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--success)]">{done}</p>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm text-[var(--muted)]">Chưa thấy</p>
-          <p className="mt-1 text-2xl font-semibold text-[var(--danger)]">{list.length - done}</p>
+        <Card className="p-4" style={{ background: "linear-gradient(135deg, #e11d4814, var(--surface) 55%)", borderColor: "#e11d4830" }}>
+          <p className="text-sm font-medium text-[var(--danger)]">Chưa thấy</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--danger)]">{list.length - done}</p>
         </Card>
       </div>
 

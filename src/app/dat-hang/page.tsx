@@ -6,8 +6,8 @@ import { AccessGuard } from "@/components/parts";
 import { Button, PageHeader, Table, Tr, Td, Select, SearchInput } from "@/components/ui";
 import { OrderStatusBadge } from "@/components/status";
 import { useRole } from "@/components/role-context";
-import { orders } from "@/lib/mock-data";
-import { ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/types";
+import { useApi } from "@/lib/api";
+import { ORDER_STATUS_LABEL, type Order, type OrderStatus } from "@/lib/types";
 import { formatVND, formatDateTime } from "@/lib/format";
 import Link from "next/link";
 
@@ -21,9 +21,10 @@ export default function Page() {
 
 function Inner() {
   const { can } = useRole();
+  const { data, loading } = useApi<Order[]>("/api/orders");
   const [status, setStatus] = useState<OrderStatus | "all">("all");
   const [q, setQ] = useState("");
-  const rows = orders.filter((o) => {
+  const rows = (data ?? []).filter((o) => {
     if (status !== "all" && o.status !== status) return false;
     return `${o.code} ${o.customerName} ${o.phone} ${o.serial} ${o.model}`.toLowerCase().includes(q.trim().toLowerCase());
   });
@@ -78,6 +79,13 @@ function Inner() {
             </Td>
           </Tr>
         ))}
+        {rows.length === 0 && (
+          <Tr>
+            <Td className="text-center text-[var(--muted)]">
+              <div className="py-6">{loading ? "Đang tải dữ liệu..." : "Chưa có đơn hàng nào"}</div>
+            </Td>
+          </Tr>
+        )}
       </Table>
     </div>
   );

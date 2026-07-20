@@ -1,6 +1,35 @@
+"use client";
+
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { usePathname } from "next/navigation";
+import {
+  Search,
+  LayoutDashboard,
+  Boxes,
+  Tags,
+  PackagePlus,
+  ShoppingCart,
+  Wrench,
+  Wallet,
+  ReceiptText,
+  Users,
+  Settings,
+} from "lucide-react";
 import type { ReactNode } from "react";
+import { NAV } from "@/lib/nav";
+
+const NAV_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
+  LayoutDashboard,
+  Boxes,
+  Tags,
+  PackagePlus,
+  ShoppingCart,
+  Wrench,
+  Wallet,
+  ReceiptText,
+  Users,
+  Settings,
+};
 
 type Tone = "primary" | "success" | "warning" | "danger" | "info" | "purple" | "muted";
 
@@ -22,8 +51,20 @@ export function Badge({ tone = "muted", children }: { tone?: Tone; children: Rea
   );
 }
 
-export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`card ${className}`}>{children}</div>;
+export function Card({
+  children,
+  className = "",
+  style,
+}: {
+  children: ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div className={`card ${className}`} style={style}>
+      {children}
+    </div>
+  );
 }
 
 export function Button({
@@ -77,11 +118,29 @@ export function PageHeader({
   subtitle?: string;
   actions?: ReactNode;
 }) {
+  const pathname = usePathname();
+  // Tìm menu khớp đường dẫn hiện tại → lấy màu + icon của menu đó
+  const nav = NAV.find((n) => pathname === n.href || pathname.startsWith(n.href + "/"));
+  const color = nav?.color ?? "var(--primary)";
+  const Icon = nav ? (NAV_ICONS[nav.icon] ?? LayoutDashboard) : LayoutDashboard;
+
   return (
     <div className="animate-fade-up mb-5 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="text-[22px] font-bold tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-0.5 text-sm text-[var(--muted)]">{subtitle}</p>}
+      <div className="flex items-start gap-3">
+        <span
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white shadow-md-soft"
+          style={{ background: `linear-gradient(135deg, ${color}, ${color}bb)` }}
+        >
+          <Icon size={21} />
+        </span>
+        <div>
+          <h1 className="text-[22px] font-bold leading-tight tracking-tight">{title}</h1>
+          {subtitle ? (
+            <p className="mt-0.5 text-sm text-[var(--muted)]">{subtitle}</p>
+          ) : (
+            <span className="mt-1.5 block h-1 w-10 rounded-full" style={{ background: color }} />
+          )}
+        </div>
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
@@ -94,9 +153,9 @@ export function Table({ head, children }: { head: string[]; children: ReactNode 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[var(--border)] bg-[var(--surface-2)] text-left text-xs uppercase tracking-wide text-[var(--muted)]">
+            <tr className="border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--primary)_6%,var(--surface-2))] text-left text-xs uppercase tracking-wide text-[color-mix(in_srgb,var(--primary)_55%,var(--muted))]">
               {head.map((h, i) => (
-                <th key={i} className="px-4 py-3 font-medium whitespace-nowrap">
+                <th key={i} className="px-4 py-3 font-semibold whitespace-nowrap">
                   {h}
                 </th>
               ))}

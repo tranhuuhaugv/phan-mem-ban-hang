@@ -55,7 +55,10 @@ export function SectionCard({
     <Card className={`p-4 ${className}`}>
       {title && (
         <div className="mb-2.5 flex items-center justify-between">
-          <h2 className="text-[13px] font-semibold uppercase tracking-wide text-[var(--muted)]">{title}</h2>
+          <h2 className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-wide text-[color-mix(in_srgb,var(--primary)_60%,var(--muted))]">
+            <span className="brand-gradient h-2.5 w-2.5 rounded-full" />
+            {title}
+          </h2>
           {action}
         </div>
       )}
