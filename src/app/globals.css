@@ -1,29 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f7f9;
+  --background: #f4f5fa;
   --surface: #ffffff;
-  --surface-2: #f9fafb;
-  --foreground: #101828;
-  --muted: #667085;
-  --border: #e5e7eb;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
+  --surface-2: #f7f8fc;
+  --foreground: #0f172a;
+  --muted: #64748b;
+  --border: #e4e7f0;
+  --primary: #4f46e5;
+  --primary-2: #7c3aed;
+  --primary-hover: #4338ca;
   --primary-fg: #ffffff;
-  --success: #16a34a;
-  --success-bg: #dcfce7;
+  --success: #059669;
+  --success-bg: #d1fae5;
   --warning: #d97706;
   --warning-bg: #fef3c7;
-  --danger: #dc2626;
-  --danger-bg: #fee2e2;
+  --danger: #e11d48;
+  --danger-bg: #ffe4e6;
   --info: #0891b2;
   --info-bg: #cffafe;
   --purple: #7c3aed;
   --purple-bg: #ede9fe;
-  --radius: 12px;
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.04);
-  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.12), 0 4px 8px rgba(16, 24, 40, 0.06);
+  --radius: 14px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 6px 16px rgba(79, 70, 229, 0.08), 0 2px 6px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 16px 40px rgba(79, 70, 229, 0.14), 0 6px 12px rgba(15, 23, 42, 0.06);
   --ring: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
@@ -41,22 +42,23 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0b0f17;
-    --surface: #131824;
-    --surface-2: #1a2130;
-    --foreground: #e7ebf3;
-    --muted: #94a3b8;
-    --border: #263043;
-    --primary: #3b82f6;
-    --primary-hover: #60a5fa;
-    --success-bg: #14321f;
-    --warning-bg: #3a2a0a;
-    --danger-bg: #3a1616;
+    --background: #0a0d16;
+    --surface: #111524;
+    --surface-2: #181d30;
+    --foreground: #e6e9f5;
+    --muted: #8b93ab;
+    --border: #232a41;
+    --primary: #6366f1;
+    --primary-2: #8b5cf6;
+    --primary-hover: #818cf8;
+    --success-bg: #0c2f22;
+    --warning-bg: #33260a;
+    --danger-bg: #38141e;
     --info-bg: #0c2f38;
     --purple-bg: #241a3d;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -72,14 +74,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* nền có chút chiều sâu */
+/* nền mesh gradient hiện đại */
 body {
   background-image: radial-gradient(
-      1200px 600px at 100% -10%,
-      color-mix(in srgb, var(--primary) 7%, transparent),
+      900px 480px at 85% -10%,
+      color-mix(in srgb, var(--primary) 10%, transparent),
       transparent 60%
     ),
-    radial-gradient(1000px 500px at -10% 0%, color-mix(in srgb, var(--purple) 6%, transparent), transparent 55%);
+    radial-gradient(800px 420px at -5% 5%, color-mix(in srgb, var(--primary-2) 9%, transparent), transparent 55%),
+    radial-gradient(700px 500px at 50% 110%, color-mix(in srgb, var(--info) 6%, transparent), transparent 60%);
   background-attachment: fixed;
 }
 
@@ -90,25 +93,40 @@ input,
 select,
 textarea {
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.15s ease;
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease,
+    opacity 0.16s ease;
 }
 
 @keyframes menu-in {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-menu {
+  animation: menu-in 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-.animate-menu {
-  animation: menu-in 0.14s ease-out;
+.animate-fade-up {
+  animation: fade-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 ::-webkit-scrollbar {
@@ -116,7 +134,7 @@ textarea {
   height: 9px;
 }
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--muted) 40%, transparent);
+  background: color-mix(in srgb, var(--muted) 35%, transparent);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-track {
@@ -135,6 +153,22 @@ textarea {
   }
   .shadow-lg-soft {
     box-shadow: var(--shadow-lg);
+  }
+  /* gradient thương hiệu dùng chung */
+  .brand-gradient {
+    background-image: linear-gradient(135deg, var(--primary), var(--primary-2));
+  }
+  .text-gradient {
+    background-image: linear-gradient(135deg, var(--primary), var(--primary-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* kính mờ cho thanh bar / dropdown */
+  .glass {
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter: blur(14px) saturate(1.4);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
   }
 }
 

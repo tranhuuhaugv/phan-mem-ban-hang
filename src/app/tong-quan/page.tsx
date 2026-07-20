@@ -34,14 +34,22 @@ function Stat({
   hint?: string;
 }) {
   return (
-    <Card className="p-4 transition-all hover:-translate-y-0.5 hover:shadow-md-soft">
+    <Card className="relative overflow-hidden p-4 transition-all hover:-translate-y-0.5 hover:shadow-md-soft">
+      {/* vệt màu nhấn góc phải */}
+      <div
+        className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full opacity-[0.09]"
+        style={{ background: tone }}
+      />
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-[var(--muted)]">{label}</p>
-          <p className="mt-1 text-2xl font-semibold tracking-tight">{value}</p>
+          <p className="text-[13px] font-medium text-[var(--muted)]">{label}</p>
+          <p className="mt-1 text-[26px] font-bold tracking-tight">{value}</p>
           {hint && <p className="mt-1 text-xs text-[var(--muted)]">{hint}</p>}
         </div>
-        <span className="grid h-11 w-11 place-items-center rounded-xl" style={{ background: tone + "1f", color: tone }}>
+        <span
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-white shadow-md-soft"
+          style={{ background: `linear-gradient(135deg, ${tone}, ${tone}cc)` }}
+        >
           {icon}
         </span>
       </div>

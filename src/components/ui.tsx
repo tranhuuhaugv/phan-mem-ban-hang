@@ -46,10 +46,10 @@ export function Button({
   className?: string;
 }) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-lg font-medium disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap active:scale-[0.98]";
+    "inline-flex items-center justify-center gap-2 rounded-xl font-medium disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap active:scale-[0.97]";
   const sizes = { sm: "h-8 px-3 text-sm", md: "h-9.5 px-4 text-sm" };
   const variants = {
-    primary: "bg-[var(--primary)] text-white shadow-sm hover:bg-[var(--primary-hover)] hover:shadow-md-soft",
+    primary: "brand-gradient text-white shadow-sm hover:shadow-md-soft hover:brightness-110",
     outline: "border border-[var(--border)] bg-[var(--surface)] shadow-sm hover:bg-[var(--surface-2)] hover:border-[var(--primary)]/40",
     ghost: "hover:bg-[var(--surface-2)]",
     danger: "bg-[var(--danger)] text-white shadow-sm hover:opacity-90 hover:shadow-md-soft",
@@ -78,10 +78,10 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
+    <div className="animate-fade-up mb-5 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-        {subtitle && <p className="text-sm text-[var(--muted)] mt-0.5">{subtitle}</p>}
+        <h1 className="text-[22px] font-bold tracking-tight">{title}</h1>
+        {subtitle && <p className="mt-0.5 text-sm text-[var(--muted)]">{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
@@ -110,7 +110,11 @@ export function Table({ head, children }: { head: string[]; children: ReactNode 
 }
 
 export function Tr({ children }: { children: ReactNode }) {
-  return <tr className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]">{children}</tr>;
+  return (
+    <tr className="border-b border-[var(--border)] last:border-0 hover:bg-[color-mix(in_srgb,var(--primary)_4%,transparent)]">
+      {children}
+    </tr>
+  );
 }
 
 export function Td({ children, className = "" }: { children: ReactNode; className?: string }) {

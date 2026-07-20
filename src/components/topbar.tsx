@@ -82,10 +82,10 @@ export function Topbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--surface)]/85 shadow-sm backdrop-blur-xl">
+    <header className="glass sticky top-0 z-40 border-b border-[var(--border)] shadow-sm backdrop-blur-xl">
       <div ref={barRef} className="relative flex h-14 items-center gap-1 px-3 md:px-5">
         <Link href="/tong-quan" className="flex items-center gap-2.5 pr-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--purple)] text-white shadow-md-soft">
+          <span className="grid h-8 w-8 place-items-center rounded-lg brand-gradient text-white shadow-md-soft">
             <Laptop size={18} />
           </span>
           <span className="hidden leading-tight md:block">
@@ -166,7 +166,7 @@ export function Topbar() {
               userMenu ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]"
             }`}
           >
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--purple)] text-xs font-semibold text-white">
+            <span className="grid h-8 w-8 place-items-center rounded-full brand-gradient text-xs font-semibold text-white">
               {(user?.fullName ?? "?").charAt(0)}
             </span>
             <span className="hidden text-left leading-tight sm:block">
@@ -180,7 +180,7 @@ export function Topbar() {
             <div className="animate-menu absolute right-0 top-full z-50 mt-1.5 w-56">
               <div className="card shadow-lg-soft overflow-hidden p-1.5">
                 <div className="mb-1 flex items-center gap-2.5 border-b border-[var(--border)] px-2.5 pb-2.5 pt-1.5">
-                  <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--purple)] text-sm font-semibold text-white">
+                  <span className="grid h-9 w-9 place-items-center rounded-full brand-gradient text-sm font-semibold text-white">
                     {(user?.fullName ?? "?").charAt(0)}
                   </span>
                   <div className="min-w-0">

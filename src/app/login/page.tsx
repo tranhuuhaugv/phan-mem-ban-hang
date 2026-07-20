@@ -36,15 +36,19 @@ export default function LoginPage() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       {/* Cột giới thiệu */}
-      <div className="relative hidden overflow-hidden bg-[var(--primary)] p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <div className="flex items-center gap-2.5">
+      <div className="brand-gradient relative hidden overflow-hidden p-12 text-white lg:flex lg:flex-col lg:justify-between">
+        {/* hoạ tiết trang trí */}
+        <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/10 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-black/10 blur-3xl" />
+        <div className="pointer-events-none absolute right-10 bottom-24 h-40 w-40 rounded-3xl border border-white/15 bg-white/5 backdrop-blur-sm" style={{ transform: "rotate(12deg)" }} />
+        <div className="relative flex items-center gap-2.5">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/15">
             <Laptop size={22} />
           </span>
           <span className="text-lg font-semibold">Kho Laptop</span>
         </div>
 
-        <div>
+        <div className="relative">
           <h1 className="text-3xl font-bold leading-tight">
             Phần mềm quản lý
             <br />
@@ -67,14 +71,14 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="text-xs text-white/60">© 2026 Kho Laptop · Bản demo giao diện</p>
+        <p className="relative text-xs text-white/60">© 2026 Kho Laptop · Bản demo giao diện</p>
       </div>
 
       {/* Cột form */}
       <div className="flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
           <div className="mb-6 flex items-center gap-2.5 lg:hidden">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--primary)] text-white">
+            <span className="brand-gradient grid h-10 w-10 place-items-center rounded-xl text-white">
               <Laptop size={22} />
             </span>
             <span className="text-lg font-semibold">Kho Laptop</span>
