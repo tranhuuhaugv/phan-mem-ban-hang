@@ -145,7 +145,9 @@ export interface CashFlow {
 export interface Invoice {
   id: string;
   code: string; // Mã hoá đơn
+  kind?: string; // ban | don_hang | sua_chua
   orderCode: string; // Mã đơn hàng liên kết
+  repairCode?: string; // Mã phiếu sửa liên kết
   customerName: string;
   value: number; // Giá trị
   date: string; // Ngày lập

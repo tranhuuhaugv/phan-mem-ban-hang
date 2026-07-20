@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Eye, CheckCircle2 } from "lucide-react";
+import { Plus, Eye, CheckCircle2, ReceiptText } from "lucide-react";
 import { AccessGuard, DetailRow } from "@/components/parts";
 import { Button, PageHeader, Table, Tr, Td, Select, SearchInput, Input, Field, Textarea } from "@/components/ui";
 import { Modal } from "@/components/modal";
@@ -131,14 +131,21 @@ function Inner() {
         onClose={() => setView(null)}
         title={`Phiếu sửa ${view?.code ?? ""}`}
         footer={
-          view && view.status !== "hoan_tat" && can("sua-chua").edit ? (
+          view ? (
             <>
               <Button variant="outline" onClick={() => setView(null)}>
                 Đóng
               </Button>
-              <Button onClick={complete} disabled={busy}>
-                <CheckCircle2 size={15} /> {busy ? "Đang lưu..." : "Hoàn tất & trả máy"}
-              </Button>
+              {can("hoa-don").create && (
+                <Button variant="outline" href={`/hoa-don/tao?repair=${view.id}`}>
+                  <ReceiptText size={15} /> Tạo phiếu thanh toán
+                </Button>
+              )}
+              {view.status !== "hoan_tat" && can("sua-chua").edit && (
+                <Button onClick={complete} disabled={busy}>
+                  <CheckCircle2 size={15} /> {busy ? "Đang lưu..." : "Hoàn tất & trả máy"}
+                </Button>
+              )}
             </>
           ) : undefined
         }

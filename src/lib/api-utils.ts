@@ -245,14 +245,18 @@ export function serializeInvoice(iv: {
   customerName: string;
   phone: string | null;
   total: number;
+  kind?: string;
   createdAt: Date;
   order?: { code: string } | null;
+  repair?: { code: string } | null;
   items?: { id: string; name: string; config: string; price: number; machine?: { serial: string } | null }[];
 }) {
   return {
     id: iv.id,
     code: iv.code,
+    kind: iv.kind ?? "ban",
     orderCode: iv.order?.code ?? "",
+    repairCode: iv.repair?.code ?? "",
     customerName: iv.customerName,
     phone: iv.phone ?? "",
     value: iv.total,

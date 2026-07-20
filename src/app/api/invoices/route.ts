@@ -5,19 +5,72 @@ import { handler, ok, serializeInvoice, nextCode, upsertCustomer } from "@/lib/a
 export const GET = handler(async () => {
   await requirePermission("hoa-don", "view");
   const rows = await db.invoice.findMany({
-    include: { order: true, items: { include: { machine: true } } },
+    include: { order: true, repair: true, items: { include: { machine: true } } },
     orderBy: { createdAt: "desc" },
   });
   return ok(rows.map(serializeInvoice));
 });
 
-// Tạo hoá đơn:
-// - mode "direct": items = [{serial, price}] → máy chuyển Đã bán, ghi phiếu thu, bảo hành tuỳ chọn
-// - mode "order": orderId → lấy máy từ đơn, đơn chuyển Đã giao, thu phần còn lại
+// Tạo hoá đơn / phiếu thanh toán:
+// - mode "direct": items = [{serial, price}] → máy Đã bán, ghi phiếu thu, bảo hành tuỳ chọn
+// - mode "order": orderId → lấy máy từ đơn, đơn Đã giao, thu phần còn lại
+// - mode "repair": repairId → thu tiền công sửa, ghi phiếu thu
 export const POST = handler(async (req: Request) => {
   await requirePermission("hoa-don", "create");
   const b = await req.json();
   const code = await nextCode("invoice", "HD-", 4);
+
+  // ===== Phiếu thanh toán từ phiếu sửa chữa =====
+  if (b.mode === "repair") {
+    if (!b.repairId) throw new HttpError(400, "Chọn phiếu sửa chữa");
+    const repair = await db.repair.findUnique({ where: { id: b.repairId }, include: { machine: true } });
+    if (!repair) throw new HttpError(404, "Không tìm thấy phiếu sửa");
+    const existed = await db.invoice.findFirst({ where: { repairId: repair.id } });
+    if (existed) throw new HttpError(409, `Phiếu sửa này đã có hoá đơn ${existed.code}`);
+
+    const machineName = repair.machine ? `${repair.machine.brand} ${repair.machine.model}` : (repair.machineName ?? "Máy");
+    const cost = repair.actualCost ?? repair.estCost;
+    const custName = repair.customerName?.trim() || "Khách sửa chữa";
+    const custPhone = repair.customerPhone?.trim() || "";
+
+    const row = await db.$transaction(async (tx) => {
+      if (custPhone) await upsertCustomer(tx, custName, custPhone);
+      const invoice = await tx.invoice.create({
+        data: {
+          code,
+          kind: "sua_chua",
+          customerName: custName,
+          phone: custPhone || null,
+          total: cost,
+          repairId: repair.id,
+          items: {
+            create: [
+              {
+                name: `Sửa chữa: ${machineName} (${repair.code})`,
+                config: repair.errorDesc,
+                price: cost,
+                machineId: repair.machineId,
+              },
+            ],
+          },
+        },
+        include: { order: true, repair: true, items: { include: { machine: true } } },
+      });
+      const cashCode = await nextCode("cashFlow", "PT-", 4);
+      await tx.cashFlow.create({
+        data: {
+          code: cashCode,
+          type: "thu",
+          amount: cost,
+          content: `Thu tiền công sửa - phiếu ${repair.code} (HĐ ${code})`,
+          category: "Sửa chữa",
+          partner: custName,
+        },
+      });
+      return invoice;
+    });
+    return ok(serializeInvoice(row), 201);
+  }
 
   if (b.mode === "order") {
     if (!b.orderId) throw new HttpError(400, "Chọn đơn hàng");
@@ -29,6 +82,7 @@ export const POST = handler(async (req: Request) => {
       const invoice = await tx.invoice.create({
         data: {
           code,
+          kind: "don_hang",
           customerName: order.customerName,
           phone: order.phone || null,
           total: order.sellPrice,
@@ -44,7 +98,7 @@ export const POST = handler(async (req: Request) => {
             ],
           },
         },
-        include: { order: true, items: { include: { machine: true } } },
+        include: { order: true, repair: true, items: { include: { machine: true } } },
       });
 
       if (order.status !== "da_giao") {
@@ -104,6 +158,7 @@ export const POST = handler(async (req: Request) => {
     const invoice = await tx.invoice.create({
       data: {
         code,
+        kind: "ban",
         customerName: custName,
         phone: custPhone || null,
         total,
@@ -119,7 +174,7 @@ export const POST = handler(async (req: Request) => {
           }),
         },
       },
-      include: { order: true, items: { include: { machine: true } } },
+      include: { order: true, repair: true, items: { include: { machine: true } } },
     });
 
     await tx.machine.updateMany({ where: { id: { in: machines.map((m) => m.id) } }, data: { status: "da_ban" } });

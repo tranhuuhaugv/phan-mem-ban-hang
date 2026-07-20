@@ -151,6 +151,8 @@ model Repair {
 
   machineId String?
   machine   Machine? @relation(fields: [machineId], references: [id])
+
+  invoices Invoice[]
 }
 
 // Phiếu thu / chi
@@ -165,17 +167,21 @@ model CashFlow {
   partner  String?
 }
 
-// Hoá đơn — có thể gắn đơn hàng hoặc bán trực tiếp, nhiều sản phẩm
+// Hoá đơn / phiếu thanh toán — gắn đơn hàng, phiếu sửa, hoặc bán trực tiếp
 model Invoice {
   id           String   @id @default(cuid())
   code         String   @unique
   customerName String
   phone        String?
   total        Int
+  kind         String   @default("ban") // ban | don_hang | sua_chua
   createdAt    DateTime @default(now())
 
   orderId String?
   order   Order?  @relation(fields: [orderId], references: [id])
+
+  repairId String?
+  repair   Repair? @relation(fields: [repairId], references: [id])
 
   items      InvoiceItem[]
   warranties Warranty[]

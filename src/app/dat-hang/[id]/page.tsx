@@ -79,8 +79,8 @@ function Inner({ id }: { id: string }) {
                 </Button>
               </>
             )}
-            <Button variant="outline" href="/hoa-don/tao">
-              <ReceiptText size={16} /> Xuất hoá đơn
+            <Button href={`/hoa-don/tao?order=${order.id}`}>
+              <ReceiptText size={16} /> Tạo phiếu thanh toán
             </Button>
           </div>
         }

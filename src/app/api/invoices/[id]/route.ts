@@ -11,6 +11,7 @@ export const GET = handler(async (_req: Request, { params }: Ctx) => {
     where: { id },
     include: {
       order: true,
+      repair: true,
       items: { include: { machine: true } },
       warranties: { include: { machine: true } },
     },

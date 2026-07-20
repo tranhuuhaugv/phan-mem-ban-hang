@@ -10,7 +10,9 @@ import { formatVND, formatDate, formatDateTime } from "@/lib/format";
 interface InvoiceDetail {
   id: string;
   code: string;
+  kind: string;
   orderCode: string;
+  repairCode: string;
   customerName: string;
   phone: string;
   value: number;
@@ -70,7 +72,7 @@ function Inner({ id }: { id: string }) {
             <div className="text-sm text-[var(--muted)]">123 Đường XYZ, Quận 1, TP.HCM · 0900 000 000</div>
           </div>
           <div className="text-right">
-            <div className="text-lg font-bold">HOÁ ĐƠN BÁN HÀNG</div>
+            <div className="text-lg font-bold">{iv.kind === "sua_chua" ? "PHIẾU THANH TOÁN SỬA CHỮA" : "HOÁ ĐƠN BÁN HÀNG"}</div>
             <div className="font-mono text-sm text-[var(--muted)]">{iv.code}</div>
             <div className="text-sm text-[var(--muted)]">Ngày lập {formatDateTime(iv.date)}</div>
           </div>
@@ -83,8 +85,10 @@ function Inner({ id }: { id: string }) {
             {iv.phone && <div className="text-[var(--muted)]">{iv.phone}</div>}
           </div>
           <div className="text-right">
-            <div className="text-[var(--muted)]">Đơn hàng</div>
-            <div className="font-mono font-medium">{iv.orderCode || "Bán trực tiếp"}</div>
+            <div className="text-[var(--muted)]">Nguồn</div>
+            <div className="font-mono font-medium">
+              {iv.repairCode ? `Phiếu sửa ${iv.repairCode}` : iv.orderCode ? `Đơn ${iv.orderCode}` : "Bán trực tiếp"}
+            </div>
           </div>
         </div>
 
