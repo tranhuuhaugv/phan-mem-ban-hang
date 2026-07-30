@@ -243,9 +243,12 @@ function Inner() {
                           className="flex w-full items-center justify-between gap-3 border-b border-[var(--border)] px-3 py-2 text-left last:border-0 hover:bg-[var(--surface-2)]"
                         >
                           <span className="min-w-0">
-                            <span className="block font-mono text-xs font-medium">{m.serial}</span>
+                            <span className="block truncate text-sm font-medium">
+                              {[m.brand, m.model].filter(Boolean).join(" ")}
+                            </span>
                             <span className="block truncate text-xs text-[var(--muted)]">
-                              {m.brand} {m.model} · {m.cpu}/{m.ram}/{m.storage}
+                              Mã : <span className="font-mono">{m.serial}</span>
+                              {"   "}SL: {inStock.filter((x) => x.brand === m.brand && x.model === m.model).length}
                             </span>
                           </span>
                           <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-[var(--primary)]">
