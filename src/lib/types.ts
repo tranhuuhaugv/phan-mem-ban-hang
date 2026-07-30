@@ -206,6 +206,45 @@ export interface Customer {
   orderCount: number;
 }
 
+// Phiếu nhập kho — 1 phiếu gồm nhiều máy
+export interface StockInListItem {
+  id: string;
+  code: string;
+  date: string;
+  supplierName?: string;
+  branchName?: string;
+  machineCount: number;
+  total: number;
+  paid: number;
+  debt: number;
+  payMethod?: string;
+}
+
+export interface StockInItem {
+  id: string;
+  serial: string;
+  name: string;
+  category?: string;
+  purchasePrice: number;
+  salePrice?: number;
+  status: MachineStatus;
+}
+
+export interface StockInDetail {
+  id: string;
+  code: string;
+  date: string;
+  supplierId?: string;
+  supplierName?: string;
+  branchName?: string;
+  note?: string;
+  total: number;
+  paid: number;
+  debt: number;
+  payMethod?: string;
+  items: StockInItem[];
+}
+
 // Tài khoản nhân viên
 export type AccountStatus = "active" | "locked";
 export interface Account {

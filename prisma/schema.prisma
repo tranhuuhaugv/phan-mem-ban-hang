@@ -89,6 +89,10 @@ model Machine {
   supplierId String?
   supplier   Supplier? @relation(fields: [supplierId], references: [id])
 
+  // Phiếu nhập kho (1 phiếu gồm nhiều máy)
+  stockInId String?
+  stockIn   StockIn? @relation(fields: [stockInId], references: [id])
+
   orders       Order[]
   repairs      Repair[]
   warranties   Warranty[]
@@ -106,6 +110,7 @@ model Branch {
   createdAt DateTime @default(now())
 
   machines Machine[]
+  stockIns StockIn[]
 }
 
 // Nhà cung cấp — nguồn nhập hàng vào kho
@@ -117,6 +122,28 @@ model Supplier {
   note      String?
   debt      Int      @default(0) // công nợ phải trả NCC (đồng)
   createdAt DateTime @default(now())
+
+  machines Machine[]
+  stockIns StockIn[]
+}
+
+// Phiếu nhập kho — 1 phiếu gồm nhiều máy
+model StockIn {
+  id        String   @id @default(cuid())
+  code      String   @unique // PN-0001
+  date      DateTime @default(now())
+  total     Int      @default(0)
+  paid      Int      @default(0)
+  debt      Int      @default(0)
+  payMethod String? // tien_mat | chuyen_khoan
+  note      String?
+  createdAt DateTime @default(now())
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
 
   machines Machine[]
 }

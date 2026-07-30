@@ -62,8 +62,11 @@ export const NAV: NavItem[] = [
     label: "Nhập kho",
     icon: "Warehouse",
     color: "#0284c7",
-    href: "/kho/nhap",
-    links: [{ label: "Nhập kho", href: "/kho/nhap" }],
+    href: "/kho/phieu-nhap",
+    links: [
+      { label: "Danh sách phiếu nhập", href: "/kho/phieu-nhap" },
+      { label: "Tạo phiếu nhập", href: "/kho/nhap" },
+    ],
   },
   {
     key: "thu-may",
