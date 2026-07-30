@@ -4,6 +4,54 @@ import { handler, ok } from "@/lib/api-utils";
 
 type Ctx = { params: Promise<{ id: string }> };
 
+// Chi tiết NCC: thông tin + lịch sử nhập hàng (máy) + lịch sử thanh toán (phiếu chi) + công nợ
+export const GET = handler(async (_req: Request, { params }: Ctx) => {
+  await requirePermission("nha-cung-cap", "view");
+  const { id } = await params;
+
+  const sup = await db.supplier.findUnique({ where: { id } });
+  if (!sup) throw new HttpError(404, "Không tìm thấy nhà cung cấp");
+
+  const [machines, payments] = await Promise.all([
+    db.machine.findMany({ where: { supplierId: id }, include: { branch: true }, orderBy: { createdAt: "desc" } }),
+    db.cashFlow.findMany({ where: { supplierId: id, type: "chi" }, orderBy: { date: "desc" } }),
+  ]);
+
+  const totalPurchase = machines.reduce((s, m) => s + m.purchasePrice, 0);
+  const paidTotal = payments.reduce((s, p) => s + p.amount, 0);
+
+  return ok({
+    supplier: {
+      id: sup.id,
+      name: sup.name,
+      phone: sup.phone ?? undefined,
+      address: sup.address ?? undefined,
+      note: sup.note ?? undefined,
+      debt: sup.debt,
+    },
+    stats: { machineCount: machines.length, totalPurchase, paidTotal, debt: sup.debt },
+    imports: machines.map((m) => ({
+      id: m.id,
+      serial: m.serial,
+      name: m.model,
+      category: m.category ?? undefined,
+      purchasePrice: m.purchasePrice,
+      salePrice: m.salePrice ?? undefined,
+      branchName: m.branch?.name ?? undefined,
+      status: m.status,
+      date: m.createdAt.toISOString(),
+    })),
+    payments: payments.map((p) => ({
+      id: p.id,
+      code: p.code,
+      amount: p.amount,
+      method: p.method ?? undefined,
+      content: p.content,
+      date: p.date.toISOString(),
+    })),
+  });
+});
+
 export const PATCH = handler(async (req: Request, { params }: Ctx) => {
   await requirePermission("nha-cung-cap", "edit");
   const { id } = await params;

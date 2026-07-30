@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Truck, MapPin, Phone } from "lucide-react";
+import Link from "next/link";
+import { Plus, Pencil, Trash2, Truck, MapPin, Phone, History } from "lucide-react";
 import { AccessGuard } from "@/components/parts";
 import { Button, PageHeader, Table, Tr, Td, Badge, Field, Input, SearchInput } from "@/components/ui";
 import { Modal, ConfirmDialog } from "@/components/modal";
@@ -9,6 +10,7 @@ import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
 import { useApi, apiPost, apiPatch, apiDelete } from "@/lib/api";
 import type { Supplier } from "@/lib/types";
+import { formatVND } from "@/lib/format";
 
 export default function NhaCungCapPage() {
   return (
@@ -91,7 +93,7 @@ function Inner() {
         <SearchInput value={q} onChange={setQ} placeholder="Tìm nhà cung cấp..." className="max-w-sm" />
       </div>
 
-      <Table head={["Nhà cung cấp", "Điện thoại", "Địa chỉ", "Số máy đã nhập", ""]}>
+      <Table head={["Nhà cung cấp", "Điện thoại", "Địa chỉ", "Số máy đã nhập", "Công nợ", ""]}>
         {rows.map((s) => (
           <Tr key={s.id}>
             <Td>
@@ -100,7 +102,9 @@ function Inner() {
                   <Truck size={14} />
                 </span>
                 <div>
-                  {s.name}
+                  <Link href={`/nha-cung-cap/${s.id}`} className="hover:text-[var(--primary)] hover:underline">
+                    {s.name}
+                  </Link>
                   {s.note && <div className="text-xs font-normal text-[var(--muted)]">{s.note}</div>}
                 </div>
               </div>
@@ -126,8 +130,18 @@ function Inner() {
             <Td>
               <Badge tone={s.machineCount > 0 ? "info" : "muted"}>{s.machineCount} máy</Badge>
             </Td>
+            <Td className="whitespace-nowrap font-medium">
+              {s.debt && s.debt > 0 ? (
+                <span className="text-[var(--danger)]">{formatVND(s.debt)}</span>
+              ) : (
+                <span className="text-xs text-[var(--muted)]">Không nợ</span>
+              )}
+            </Td>
             <Td>
               <div className="flex items-center justify-end gap-1">
+                <Button size="sm" variant="ghost" href={`/nha-cung-cap/${s.id}`}>
+                  <History size={15} />
+                </Button>
                 {perm.edit && (
                   <Button size="sm" variant="ghost" onClick={() => openEdit(s)}>
                     <Pencil size={15} />

@@ -115,6 +115,7 @@ model Supplier {
   phone     String?  @unique
   address   String?
   note      String?
+  debt      Int      @default(0) // công nợ phải trả NCC (đồng)
   createdAt DateTime @default(now())
 
   machines Machine[]
@@ -194,9 +195,11 @@ model CashFlow {
   type     CashType
   date     DateTime @default(now())
   amount   Int
-  content  String
-  category String
-  partner  String?
+  content    String
+  category   String
+  partner    String?
+  method     String? // hình thức: tien_mat | chuyen_khoan
+  supplierId String? // gắn phiếu chi với NCC (thanh toán nhập hàng)
 }
 
 // Hoá đơn / phiếu thanh toán — gắn đơn hàng, phiếu sửa, hoặc bán trực tiếp

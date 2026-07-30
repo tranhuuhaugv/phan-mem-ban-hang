@@ -15,6 +15,7 @@ export const GET = handler(async () => {
       phone: s.phone ?? undefined,
       address: s.address ?? undefined,
       note: s.note ?? undefined,
+      debt: s.debt,
       machineCount: s._count.machines,
     })),
   );

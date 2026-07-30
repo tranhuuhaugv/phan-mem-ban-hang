@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Plus, RefreshCw } from "lucide-react";
+import { Save, Plus, RefreshCw, Wallet, CreditCard } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { Button, PageHeader, Field, Input, Select } from "@/components/ui";
 import { Modal } from "@/components/modal";
@@ -43,6 +43,9 @@ function Inner() {
   // Số lượng / giá nhập
   const [quantity, setQuantity] = useState("1");
   const [unitPrice, setUnitPrice] = useState("");
+  // Thanh toán
+  const [amountPaid, setAmountPaid] = useState("");
+  const [payMethod, setPayMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
   const [busy, setBusy] = useState(false);
 
   // Modal thêm nhanh nhà cung cấp
@@ -53,6 +56,8 @@ function Inner() {
   const hasSerial = serial.trim() !== "";
   const qty = hasSerial ? 1 : Math.max(1, Math.floor(Number(quantity) || 1));
   const total = qty * (Number(unitPrice) || 0);
+  const paid = Math.max(0, Math.min(total, Math.round(Number(amountPaid) || 0)));
+  const debt = total - paid;
 
   const saveSupplier = async () => {
     if (!sf.name.trim()) {
@@ -85,6 +90,8 @@ function Inner() {
     setDescription("");
     setQuantity("1");
     setUnitPrice("");
+    setAmountPaid("");
+    setPayMethod("tien_mat");
   };
 
   const save = async () => {
@@ -94,7 +101,7 @@ function Inner() {
     }
     setBusy(true);
     try {
-      const res = await apiPost<{ count: number; serials: string[] }>("/api/stock-in", {
+      const res = await apiPost<{ count: number; serials: string[]; debt: number }>("/api/stock-in", {
         date,
         branchId: branchId || undefined,
         supplierId: supplierId || undefined,
@@ -105,8 +112,14 @@ function Inner() {
         description: description || undefined,
         quantity: qty,
         unitPrice: Number(unitPrice) || 0,
+        amountPaid: paid,
+        payMethod,
       });
-      toast(`Đã nhập ${res.count} máy vào kho (${res.serials.join(", ")})`);
+      const msg =
+        res.debt > 0
+          ? `Đã nhập ${res.count} máy — còn nợ NCC ${formatVND(res.debt)}`
+          : `Đã nhập ${res.count} máy, đã thanh toán đủ`;
+      toast(msg);
       router.push("/kho");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Nhập kho thất bại", "warning");
@@ -187,9 +200,74 @@ function Inner() {
               </Field>
             </div>
             {hasSerial && <p className="text-[11px] text-[var(--muted)]">Có Serial nên số lượng cố định = 1.</p>}
-            <div className="flex items-center justify-between border-t border-[var(--border)] pt-2 text-sm">
-              <span className="text-[var(--muted)]">Thành tiền ({qty} máy)</span>
-              <span className="font-semibold">{formatVND(total)}</span>
+          </div>
+        </SectionCard>
+      </div>
+
+      <div className="mt-3">
+        <SectionCard title="Thanh toán">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-3">
+              <Field label="Số tiền thanh toán (₫)" hint="Để trống / trả thiếu → phần còn lại ghi nợ nhà cung cấp">
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    value={amountPaid}
+                    onChange={(e) => setAmountPaid(e.target.value)}
+                    placeholder="0"
+                    className="flex-1"
+                  />
+                  <Button type="button" variant="outline" onClick={() => setAmountPaid(String(total))} disabled={total <= 0}>
+                    Trả đủ
+                  </Button>
+                </div>
+              </Field>
+              <Field label="Hình thức thanh toán">
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { k: "tien_mat", label: "Tiền mặt", icon: Wallet },
+                    { k: "chuyen_khoan", label: "Chuyển khoản", icon: CreditCard },
+                  ] as const).map(({ k, label, icon: Icon }) => {
+                    const active = payMethod === k;
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => setPayMethod(k)}
+                        className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                          active
+                            ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
+                            : "border-[var(--border)] hover:bg-[var(--surface-2)]"
+                        }`}
+                      >
+                        <Icon size={16} /> {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+            </div>
+
+            <div className="space-y-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--muted)]">Tổng tiền ({qty} máy)</span>
+                <span className="font-medium">{formatVND(total)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--muted)]">Đã thanh toán</span>
+                <span className="font-medium text-[var(--success)]">{formatVND(paid)}</span>
+              </div>
+              <div className="flex items-center justify-between border-t border-[var(--border)] pt-2">
+                <span className="text-[var(--muted)]">Còn nợ NCC</span>
+                <span className={`font-semibold ${debt > 0 ? "text-[var(--danger)]" : ""}`}>{formatVND(debt)}</span>
+              </div>
+              {debt > 0 && (
+                <p className="text-[11px] text-[var(--muted)]">
+                  {supplierId
+                    ? "Lưu xong sẽ ghi nợ khoản này cho nhà cung cấp đã chọn."
+                    : "Chưa chọn nhà cung cấp — chọn để ghi nợ, nếu không khoản thiếu sẽ không được theo dõi."}
+                </p>
+              )}
             </div>
           </div>
         </SectionCard>

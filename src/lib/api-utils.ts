@@ -236,6 +236,7 @@ export function serializeCashFlow(f: {
   content: string;
   category: string;
   partner: string | null;
+  method?: string | null;
 }) {
   return {
     id: f.id,
@@ -246,6 +247,7 @@ export function serializeCashFlow(f: {
     content: f.content,
     category: f.category,
     partner: f.partner ?? undefined,
+    method: f.method ?? undefined,
   };
 }
 

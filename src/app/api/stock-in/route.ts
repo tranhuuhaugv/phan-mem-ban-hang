@@ -1,10 +1,12 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
-import { handler, ok, serializeMachine } from "@/lib/api-utils";
+import { handler, ok, serializeMachine, nextCode } from "@/lib/api-utils";
 import type { Condition } from "@/generated/prisma/enums";
 
 // Nhập kho: tạo 1 hoặc nhiều máy vào kho từ 1 mặt hàng.
-// Body: { date?, branchId?, supplierId?, category?, name, serial?, salePrice?, description?, quantity?, unitPrice? }
+// Body: { date?, branchId?, supplierId?, category?, name, serial?, salePrice?, description?,
+//         quantity?, unitPrice?, amountPaid?, payMethod? }
+// Trả tiền một phần / không trả → phần còn thiếu ghi vào công nợ nhà cung cấp.
 export const POST = handler(async (req: Request) => {
   await requirePermission("nhap-kho", "create");
   const b = await req.json();
@@ -27,9 +29,11 @@ export const POST = handler(async (req: Request) => {
 
   // Nguồn nhập = tên nhà cung cấp (nếu có)
   let source = "Nhập kho";
+  let supplierName: string | null = null;
   if (supplierId) {
     const sup = await db.supplier.findUnique({ where: { id: supplierId } });
     if (!sup) throw new HttpError(404, "Không tìm thấy nhà cung cấp");
+    supplierName = sup.name;
     source = `NCC: ${sup.name}`;
   }
 
@@ -71,15 +75,50 @@ export const POST = handler(async (req: Request) => {
     ...(createdAt ? { createdAt } : {}),
   };
 
-  const created = await db.$transaction(
-    serials.map((serial) => db.machine.create({ data: { serial, ...base } })),
-  );
+  // Tiền: tổng = SL × đơn giá; đã trả (kẹp 0..tổng); còn thiếu → ghi nợ NCC
+  const total = serials.length * unitPrice;
+  const paid = Math.max(0, Math.min(total, Math.round(Number(b.amountPaid) || 0)));
+  const unpaid = total - paid;
+  const payMethod = b.payMethod === "chuyen_khoan" ? "chuyen_khoan" : "tien_mat";
+  const cashCode = paid > 0 ? await nextCode("cashFlow", "PC-", 4) : null;
+
+  const created = await db.$transaction(async (tx) => {
+    const machines = [];
+    for (const serial of serials) {
+      machines.push(await tx.machine.create({ data: { serial, ...base } }));
+    }
+    // Đã trả → ghi phiếu chi vào sổ quỹ
+    if (paid > 0 && cashCode) {
+      await tx.cashFlow.create({
+        data: {
+          code: cashCode,
+          type: "chi",
+          amount: paid,
+          content: `Thanh toán nhập kho ${serials.length} × ${name}`,
+          category: "Nhập hàng",
+          partner: supplierName,
+          method: payMethod,
+          supplierId,
+          ...(createdAt ? { date: createdAt } : {}),
+        },
+      });
+    }
+    // Còn thiếu → cộng vào công nợ nhà cung cấp
+    if (unpaid > 0 && supplierId) {
+      await tx.supplier.update({ where: { id: supplierId }, data: { debt: { increment: unpaid } } });
+    }
+    return machines;
+  });
 
   return ok(
     {
       count: created.length,
       serials: created.map((m) => m.serial),
       machines: created.map(serializeMachine),
+      total,
+      paid,
+      debt: unpaid,
+      debtToSupplier: unpaid > 0 && !!supplierId,
     },
     201,
   );

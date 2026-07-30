@@ -72,6 +72,7 @@ export interface Supplier {
   phone?: string;
   address?: string;
   note?: string;
+  debt?: number; // công nợ phải trả NCC
   machineCount: number; // số máy nhập từ NCC này (chặn xoá)
 }
 
@@ -164,7 +165,13 @@ export interface CashFlow {
   content: string; // Nội dung
   category: string; // Loại chi phí / nguồn thu
   partner?: string; // Người nộp / nhận
+  method?: string; // Hình thức: tien_mat | chuyen_khoan
 }
+
+export const PAY_METHOD_LABEL: Record<string, string> = {
+  tien_mat: "Tiền mặt",
+  chuyen_khoan: "Chuyển khoản",
+};
 
 // Hoá đơn
 export interface Invoice {
