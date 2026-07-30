@@ -8,6 +8,7 @@ type Ctx = { params: Promise<{ serial: string }> };
 async function findMachine(serial: string) {
   const m = await db.machine.findFirst({
     where: { serial: { equals: decodeURIComponent(serial), mode: "insensitive" } },
+    include: { branch: true, supplier: true },
   });
   if (!m) throw new HttpError(404, "Không tìm thấy sản phẩm");
   return m;
@@ -67,7 +68,10 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
       source: b.source !== undefined ? String(b.source) : undefined,
       status: b.status !== undefined ? (b.status as MachineStatus) : undefined,
       note: b.note !== undefined ? (b.note ? String(b.note) : null) : undefined,
+      branchId: b.branchId !== undefined ? (b.branchId ? String(b.branchId) : null) : undefined,
+      supplierId: b.supplierId !== undefined ? (b.supplierId ? String(b.supplierId) : null) : undefined,
     },
+    include: { branch: true, supplier: true },
   });
   return ok(serializeMachine(row));
 });

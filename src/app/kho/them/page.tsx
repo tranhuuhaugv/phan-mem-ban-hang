@@ -7,7 +7,7 @@ import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { Button, PageHeader, Field, Input, Select, Textarea } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { useApi, apiPost } from "@/lib/api";
-import { CONDITION_LABEL, type Category, type Machine } from "@/lib/types";
+import { CONDITION_LABEL, type Category, type Branch, type Supplier, type Machine } from "@/lib/types";
 
 export default function Page() {
   return (
@@ -21,6 +21,8 @@ function Inner() {
   const router = useRouter();
   const toast = useToast();
   const { data: categories } = useApi<Category[]>("/api/categories");
+  const { data: branches } = useApi<Branch[]>("/api/branches");
+  const { data: suppliers } = useApi<Supplier[]>("/api/suppliers");
   const [busy, setBusy] = useState(false);
 
   const [f, setF] = useState({
@@ -35,6 +37,8 @@ function Inner() {
     condition: "like_new",
     purchasePrice: "",
     source: "",
+    branchId: "",
+    supplierId: "",
     note: "",
     desc: "",
   });
@@ -61,6 +65,8 @@ function Inner() {
         condition: f.condition,
         purchasePrice: Number(f.purchasePrice) || 0,
         source: f.source,
+        branchId: f.branchId || undefined,
+        supplierId: f.supplierId || undefined,
         note: [f.note, f.desc].filter(Boolean).join(" — "),
       });
       toast(`Đã lưu máy ${row.serial} vào kho`);
@@ -134,7 +140,27 @@ function Inner() {
               <Field label="Giá nhập (₫)">
                 <Input type="number" value={f.purchasePrice} onChange={set("purchasePrice")} placeholder="8500000" />
               </Field>
-              <Field label="Nguồn nhập">
+              <Field label="Chi nhánh" hint="Chi nhánh đang giữ máy (quản ở menu Chi nhánh)">
+                <Select value={f.branchId} onChange={set("branchId")}>
+                  <option value="">— Chọn chi nhánh —</option>
+                  {(branches ?? []).map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Nhà cung cấp" hint="Nguồn nhập (quản ở menu Nhà cung cấp)">
+                <Select value={f.supplierId} onChange={set("supplierId")}>
+                  <option value="">— Chọn nhà cung cấp —</option>
+                  {(suppliers ?? []).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Nguồn nhập" hint="Ghi chú nguồn dạng chữ (tuỳ chọn)">
                 <Input value={f.source} onChange={set("source")} placeholder="Nhập lô HN" />
               </Field>
               <Field label="Ghi chú">

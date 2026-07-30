@@ -23,6 +23,8 @@ export const MENU_LABEL: Record<MenuKey, string> = {
   "thu-chi": "Thu - Chi",
   "hoa-don": "Hoá đơn",
   "khach-hang": "Khách hàng",
+  "nha-cung-cap": "Nhà cung cấp",
+  "chi-nhanh": "Chi nhánh",
   "cai-dat": "Cài đặt",
 };
 
@@ -123,6 +125,22 @@ export const NAV: NavItem[] = [
     color: "#0d9488",
     href: "/khach-hang",
     links: [{ label: "Danh sách khách hàng", href: "/khach-hang" }],
+  },
+  {
+    key: "nha-cung-cap",
+    label: "Nhà cung cấp",
+    icon: "Truck",
+    color: "#ca8a04",
+    href: "/nha-cung-cap",
+    links: [{ label: "Danh sách nhà cung cấp", href: "/nha-cung-cap" }],
+  },
+  {
+    key: "chi-nhanh",
+    label: "Chi nhánh",
+    icon: "Building2",
+    color: "#0369a1",
+    href: "/chi-nhanh",
+    links: [{ label: "Danh sách chi nhánh", href: "/chi-nhanh" }],
   },
   {
     key: "cai-dat",

@@ -104,6 +104,10 @@ type MachineRow = {
   source: string;
   status: string;
   note: string | null;
+  branchId?: string | null;
+  supplierId?: string | null;
+  branch?: { name: string } | null;
+  supplier?: { name: string } | null;
   createdAt: Date;
 };
 
@@ -123,6 +127,10 @@ export function serializeMachine(m: MachineRow) {
     source: m.source,
     status: m.status,
     note: m.note ?? undefined,
+    branchId: m.branchId ?? undefined,
+    branchName: m.branch?.name ?? undefined,
+    supplierId: m.supplierId ?? undefined,
+    supplierName: m.supplier?.name ?? undefined,
     createdAt: m.createdAt.toISOString(),
   };
 }

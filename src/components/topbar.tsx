@@ -13,6 +13,8 @@ import {
   Wallet,
   ReceiptText,
   Users,
+  Truck,
+  Building2,
   Settings,
   Laptop,
   ChevronDown,
@@ -32,6 +34,8 @@ const ICONS: Record<string, React.ComponentType<{ size?: number; className?: str
   Wallet,
   ReceiptText,
   Users,
+  Truck,
+  Building2,
   Settings,
 };
 

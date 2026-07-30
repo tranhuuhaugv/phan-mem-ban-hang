@@ -75,6 +75,10 @@ function Inner({ serial }: { serial: string }) {
             <Badge tone="muted">{CONDITION_LABEL[machine.condition]}</Badge>
           </DetailRow>
           <DetailRow label="Giá nhập">{formatVND(machine.purchasePrice)}</DetailRow>
+          <DetailRow label="Chi nhánh">
+            {machine.branchName ? <Badge tone="info">{machine.branchName}</Badge> : "—"}
+          </DetailRow>
+          <DetailRow label="Nhà cung cấp">{machine.supplierName || "—"}</DetailRow>
           <DetailRow label="Nguồn nhập">{machine.source || "—"}</DetailRow>
           <DetailRow label="Ngày nhập kho">{formatDateTime(machine.createdAt)}</DetailRow>
           {machine.note && <DetailRow label="Ghi chú">{machine.note}</DetailRow>}

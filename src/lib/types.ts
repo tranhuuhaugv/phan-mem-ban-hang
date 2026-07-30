@@ -47,7 +47,31 @@ export interface Machine {
   source: string; // Nguồn nhập
   status: MachineStatus;
   note?: string;
+  branchId?: string; // Chi nhánh đang giữ máy
+  branchName?: string;
+  supplierId?: string; // Nhà cung cấp nhập máy
+  supplierName?: string;
   createdAt: string; // ngày nhập
+}
+
+// Chi nhánh / cửa hàng
+export interface Branch {
+  id: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  note?: string;
+  machineCount: number; // số máy thuộc chi nhánh (chặn xoá)
+}
+
+// Nhà cung cấp — nguồn nhập hàng
+export interface Supplier {
+  id: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  note?: string;
+  machineCount: number; // số máy nhập từ NCC này (chặn xoá)
 }
 
 // Danh mục = loại sản phẩm (Laptop / Macbook / Phụ kiện...)

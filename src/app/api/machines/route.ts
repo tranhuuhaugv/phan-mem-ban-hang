@@ -5,7 +5,10 @@ import type { Condition, MachineStatus } from "@/generated/prisma/enums";
 
 export const GET = handler(async () => {
   await requirePermission("kho", "view");
-  const rows = await db.machine.findMany({ orderBy: { createdAt: "desc" } });
+  const rows = await db.machine.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { branch: true, supplier: true },
+  });
   return ok(rows.map(serializeMachine));
 });
 
@@ -31,7 +34,10 @@ export const POST = handler(async (req: Request) => {
       source: String(b.source ?? "").trim(),
       status: (b.status ?? "ton_kho") as MachineStatus,
       note: b.note ? String(b.note) : null,
+      branchId: b.branchId ? String(b.branchId) : null,
+      supplierId: b.supplierId ? String(b.supplierId) : null,
     },
+    include: { branch: true, supplier: true },
   });
   return ok(serializeMachine(row), 201);
 });

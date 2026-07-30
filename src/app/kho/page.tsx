@@ -24,11 +24,16 @@ export default function KhoPage() {
   const [status, setStatus] = useState<MachineStatus | "all">("all");
   const [brand, setBrand] = useState<string>("all");
   const [category, setCategory] = useState<string>("all");
+  const [branch, setBranch] = useState<string>("all");
   const [del, setDel] = useState<Machine | null>(null);
 
   const brands = useMemo(() => Array.from(new Set(machines.map((m) => m.brand))).sort(), [machines]);
   const cats = useMemo(
     () => Array.from(new Set(machines.map((m) => m.category).filter(Boolean) as string[])).sort(),
+    [machines],
+  );
+  const branchNames = useMemo(
+    () => Array.from(new Set(machines.map((m) => m.branchName).filter(Boolean) as string[])).sort(),
     [machines],
   );
 
@@ -40,12 +45,13 @@ export default function KhoPage() {
       if (status !== "all" && m.status !== status) return false;
       if (brand !== "all" && m.brand !== brand) return false;
       if (category !== "all" && m.category !== category) return false;
+      if (branch !== "all" && m.branchName !== branch) return false;
       if (qMa && !m.serial.toLowerCase().includes(qMa)) return false;
       if (qTen && !`${m.brand} ${m.model}`.toLowerCase().includes(qTen)) return false;
       if (qCh && !`${m.cpu} ${m.ram} ${m.storage} ${m.screen}`.toLowerCase().includes(qCh)) return false;
       return true;
     });
-  }, [machines, maSP, ten, cauHinh, status, brand, category]);
+  }, [machines, maSP, ten, cauHinh, status, brand, category, branch]);
 
   return (
     <div>
@@ -62,7 +68,7 @@ export default function KhoPage() {
       />
 
       {/* Mỗi tiêu chí 1 ô riêng */}
-      <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6 2xl:grid-cols-7">
         <div className="relative">
           <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
           <Input placeholder="Mã SP (VD: SP0001)" value={maSP} onChange={(e) => setMaSP(e.target.value)} className="pl-8" />
@@ -91,6 +97,16 @@ export default function KhoPage() {
             </option>
           ))}
         </Select>
+        {branchNames.length > 0 && (
+          <Select value={branch} onChange={(e) => setBranch(e.target.value)}>
+            <option value="all">Tất cả chi nhánh</option>
+            {branchNames.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </Select>
+        )}
         <Select value={status} onChange={(e) => setStatus(e.target.value as MachineStatus | "all")}>
           <option value="all">Tất cả trạng thái</option>
           {Object.entries(MACHINE_STATUS_LABEL).map(([k, v]) => (
@@ -101,7 +117,7 @@ export default function KhoPage() {
         </Select>
       </div>
 
-      <Table head={["Mã SP", "Tên sản phẩm", "Danh mục", "Cấu hình", "Loại", "Giá nhập", "Ngày nhập", "Trạng thái", ""]}>
+      <Table head={["Mã SP", "Tên sản phẩm", "Danh mục", "Chi nhánh", "Cấu hình", "Loại", "Giá nhập", "Ngày nhập", "Trạng thái", ""]}>
         {rows.map((m) => (
           <Tr key={m.id}>
             <Td>
@@ -116,6 +132,14 @@ export default function KhoPage() {
               <div className="text-xs text-[var(--muted)]">{m.brand}</div>
             </Td>
             <Td>{m.category ? <Badge tone="purple">{m.category}</Badge> : <span className="text-xs text-[var(--muted)]">—</span>}</Td>
+            <Td>
+              {m.branchName ? (
+                <Badge tone="info">{m.branchName}</Badge>
+              ) : (
+                <span className="text-xs text-[var(--muted)]">—</span>
+              )}
+              {m.supplierName && <div className="mt-0.5 text-[11px] text-[var(--muted)]">NCC: {m.supplierName}</div>}
+            </Td>
             <Td>
               <div className="text-xs text-[var(--muted)]">
                 {m.cpu} · {m.ram} · {m.storage}

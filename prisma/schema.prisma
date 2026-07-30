@@ -81,11 +81,42 @@ model Machine {
   note          String?
   createdAt     DateTime      @default(now())
 
+  // Chi nhánh đang giữ máy + nhà cung cấp nhập máy (tuỳ chọn)
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+
   orders       Order[]
   repairs      Repair[]
   warranties   Warranty[]
   invoiceItems InvoiceItem[]
   buyReceipt   BuyReceipt?
+}
+
+// Chi nhánh / cửa hàng
+model Branch {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  address   String?
+  phone     String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  machines Machine[]
+}
+
+// Nhà cung cấp — nguồn nhập hàng vào kho
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?  @unique
+  address   String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  machines Machine[]
 }
 
 // Danh mục = loại sản phẩm (Laptop / Macbook / Phụ kiện...)

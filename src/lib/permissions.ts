@@ -11,6 +11,8 @@ export type MenuKey =
   | "thu-chi"
   | "hoa-don"
   | "khach-hang"
+  | "nha-cung-cap"
+  | "chi-nhanh"
   | "cai-dat";
 
 export interface Permission {
@@ -72,6 +74,16 @@ export const PERMISSIONS: Record<MenuKey, Record<Role, Permission>> = {
     admin: FULL,
     manager: FULL,
     staff: { view: true, create: true, edit: false, remove: false },
+  },
+  "nha-cung-cap": {
+    admin: FULL,
+    manager: FULL,
+    staff: { view: true, create: false, edit: false, remove: false }, // chỉ xem
+  },
+  "chi-nhanh": {
+    admin: FULL,
+    manager: { view: true, create: true, edit: true, remove: false }, // không xoá chi nhánh
+    staff: { view: true, create: false, edit: false, remove: false }, // chỉ xem
   },
   "cai-dat": {
     admin: FULL,
