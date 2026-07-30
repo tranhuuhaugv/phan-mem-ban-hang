@@ -343,6 +343,19 @@ model RolePermission {
   @@unique([role, menu])
 }
 
+// Cấu hình cửa hàng (1 dòng duy nhất) — hiển thị trên hoá đơn / mẫu in
+model StoreConfig {
+  id            String   @id @default("singleton")
+  name          String   @default("")
+  phone         String   @default("")
+  address       String   @default("")
+  logoUrl       String? // data URL (base64) của logo
+  paperSize     String   @default("A5")
+  defaultBranch String   @default("")
+  thankYou      String   @default("")
+  updatedAt     DateTime @updatedAt @default(now())
+}
+
 // Tài khoản đăng nhập
 model Account {
   id           String        @id @default(cuid())

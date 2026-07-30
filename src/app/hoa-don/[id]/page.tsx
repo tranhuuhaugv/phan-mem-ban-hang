@@ -38,8 +38,17 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   );
 }
 
+interface StoreConfig {
+  name: string;
+  phone: string;
+  address: string;
+  logoUrl?: string;
+  thankYou: string;
+}
+
 function Inner({ id }: { id: string }) {
   const { data: iv, loading, error, reload } = useApi<InvoiceDetail>(`/api/invoices/${id}`);
+  const { data: store } = useApi<StoreConfig>("/api/store-config");
   const { can } = useRole();
   const toast = useToast();
   const [openPay, setOpenPay] = useState(false);
@@ -112,9 +121,17 @@ function Inner({ id }: { id: string }) {
       {/* Bản in */}
       <Card className="p-8 print:border-0 print:shadow-none">
         <div className="flex items-start justify-between border-b border-[var(--border)] pb-4">
-          <div>
-            <div className="text-lg font-bold">CỬA HÀNG LAPTOP ABC</div>
-            <div className="text-sm text-[var(--muted)]">123 Đường XYZ, Quận 1, TP.HCM · 0900 000 000</div>
+          <div className="flex items-center gap-3">
+            {store?.logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={store.logoUrl} alt="Logo" className="h-14 w-14 object-contain" />
+            )}
+            <div>
+              <div className="text-lg font-bold">{store?.name || "CỬA HÀNG LAPTOP"}</div>
+              <div className="text-sm text-[var(--muted)]">
+                {[store?.address, store?.phone].filter(Boolean).join(" · ") || "—"}
+              </div>
+            </div>
           </div>
           <div className="text-right">
             <div className="text-lg font-bold">{iv.kind === "sua_chua" ? "PHIẾU THANH TOÁN SỬA CHỮA" : "HOÁ ĐƠN BÁN HÀNG"}</div>
@@ -212,6 +229,10 @@ function Inner({ id }: { id: string }) {
             </p>
             <p className="mt-2 italic">☞ Khách hàng xác nhận: Đã kiểm tra máy và đọc kĩ chế độ bảo hành.</p>
           </div>
+        )}
+
+        {store?.thankYou && (
+          <p className="mt-6 text-center text-sm italic text-[var(--muted)]">{store.thankYou}</p>
         )}
 
         <div className="mt-8 grid grid-cols-2 gap-4 text-center text-sm text-[var(--muted)]">
