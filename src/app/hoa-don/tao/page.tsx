@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Save, FileText, PackageOpen, Plus, Trash2, Search, Wrench, Wallet, CreditCard } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard, DetailRow } from "@/components/parts";
 import { CustomerField } from "@/components/customer-field";
-import { Button, PageHeader, Field, Input, Select, Textarea } from "@/components/ui";
+import { Button, PageHeader, Field, Input, Select } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { useApi, apiPost } from "@/lib/api";
 import type { Machine, Order, Repair, Invoice } from "@/lib/types";
@@ -42,9 +42,6 @@ function Inner() {
   const [phone, setPhone] = useState("");
   const [orderId, setOrderId] = useState("");
   const [repairId, setRepairId] = useState("");
-  const [withWarranty, setWithWarranty] = useState(false);
-  const [wMonths, setWMonths] = useState("6");
-  const [wCondition, setWCondition] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
   const [payMethod, setPayMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
   const [busy, setBusy] = useState(false);
@@ -106,7 +103,6 @@ function Inner() {
     }
     setBusy(true);
     try {
-      const warranty = withWarranty ? { months: Number(wMonths) || 6, condition: wCondition } : undefined;
       const body =
         mode === "direct"
           ? {
@@ -114,12 +110,11 @@ function Inner() {
               customerName,
               phone,
               items: items.map((i) => ({ serial: i.serial, price: i.price })),
-              warranty,
               amountPaid: amountPaid === "" ? undefined : Number(amountPaid) || 0,
               payMethod,
             }
           : mode === "order"
-            ? { mode: "order", orderId, warranty }
+            ? { mode: "order", orderId }
             : { mode: "repair", repairId };
       const row = await apiPost<Invoice>("/api/invoices", body);
       toast(`Đã tạo hoá đơn ${row.code} · ${formatVND(row.value)}`);
@@ -210,14 +205,6 @@ function Inner() {
                 </Select>
               </Field>
             </SectionCard>
-            <WarrantyCard
-              withWarranty={withWarranty}
-              setWithWarranty={setWithWarranty}
-              wMonths={wMonths}
-              setWMonths={setWMonths}
-              wCondition={wCondition}
-              setWCondition={setWCondition}
-            />
           </div>
         ) : (
           <div className="grid items-start gap-3 lg:grid-cols-3">
@@ -225,14 +212,6 @@ function Inner() {
               <SectionCard title="Khách hàng">
                 <CustomerField name={customerName} phone={phone} onName={setCustomerName} onPhone={setPhone} />
               </SectionCard>
-              <WarrantyCard
-                withWarranty={withWarranty}
-                setWithWarranty={setWithWarranty}
-                wMonths={wMonths}
-                setWMonths={setWMonths}
-                wCondition={wCondition}
-                setWCondition={setWCondition}
-              />
             </div>
 
             <div className="lg:col-span-2">
@@ -409,45 +388,5 @@ function Inner() {
         </div>
       </form>
     </div>
-  );
-}
-
-function WarrantyCard({
-  withWarranty,
-  setWithWarranty,
-  wMonths,
-  setWMonths,
-  wCondition,
-  setWCondition,
-}: {
-  withWarranty: boolean;
-  setWithWarranty: (v: boolean) => void;
-  wMonths: string;
-  setWMonths: (v: string) => void;
-  wCondition: string;
-  setWCondition: (v: string) => void;
-}) {
-  return (
-    <SectionCard title="Bảo hành (tuỳ chọn)">
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={withWarranty}
-          onChange={(e) => setWithWarranty(e.target.checked)}
-          className="h-4 w-4 accent-[var(--primary)]"
-        />
-        Kèm phiếu bảo hành cho các máy trong hoá đơn
-      </label>
-      {withWarranty && (
-        <div className="mt-3 space-y-3">
-          <Field label="Thời hạn (tháng)">
-            <Input type="number" value={wMonths} onChange={(e) => setWMonths(e.target.value)} />
-          </Field>
-          <Field label="Điều kiện bảo hành">
-            <Textarea rows={2} value={wCondition} onChange={(e) => setWCondition(e.target.value)} placeholder="VD: BH phần cứng, 1 đổi 1 trong 15 ngày" />
-          </Field>
-        </div>
-      )}
-    </SectionCard>
   );
 }

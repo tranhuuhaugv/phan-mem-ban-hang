@@ -182,17 +182,35 @@ function Inner({ id }: { id: string }) {
           </div>
         </div>
 
-        {iv.warranties.length > 0 && (
-          <div className="mt-6 rounded-lg border border-[var(--border)] p-3 text-sm">
-            <div className="mb-1 flex items-center gap-1.5 font-medium">
-              <ShieldCheck size={15} className="text-[var(--success)]" /> Phiếu bảo hành
+        {iv.kind !== "sua_chua" && (
+          <div className="mt-6 rounded-lg border border-[var(--border)] p-4 text-[13px] leading-relaxed">
+            <div className="mb-1.5 flex items-center gap-1.5 font-semibold">
+              <ShieldCheck size={15} className="text-[var(--success)]" /> Chế độ bảo hành sản phẩm máy
             </div>
-            {iv.warranties.map((w) => (
-              <div key={w.id} className="text-[var(--muted)]">
-                Mã SP {w.serial || "—"} · {w.months} tháng kể từ {formatDate(w.startDate)}
-                {w.condition ? ` · ${w.condition}` : ""}
-              </div>
-            ))}
+            <p className="font-semibold text-[var(--danger)]">Áp dụng đối với tất cả các máy bán ra tại cửa hàng.</p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>– Được bảo hành 6 tháng, máy lỗi đổi mới (LK), riêng ram, chip, bộ nhớ bảo hành 12 tháng.</span>
+              <span className="inline-flex items-center gap-3">
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block h-3.5 w-3.5 border border-current" /> Like new
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block h-3.5 w-3.5 border border-current" /> Laptop cũ
+                </span>
+              </span>
+            </div>
+            <p className="mt-1.5 font-medium">* Đối với Laptop cũ, Like new:</p>
+            <p>
+              – Được bao test trong 15 ngày đổi miễn phí (Không nhận hoàn trả lại sản phẩm). Sản phẩm phải có đầy đủ phụ
+              kiện kèm theo và không bị trầy xước phát sinh.
+            </p>
+            <p>– Được bảo hành 3 tháng, máy lỗi đổi mới (LK), riêng ram, chip, bộ nhớ bảo hành 12 tháng.</p>
+            <p className="mt-1.5 font-medium">* Đối với iPad:</p>
+            <p>– Được bao test 7 ngày + bảo hành 3 tháng. Không nhận hoàn trả lại sản phẩm.</p>
+            <p className="mt-2 font-bold text-[var(--danger)]">
+              ĐẶC BIỆT: HỖ TRỢ CÀI ĐẶT PHẦN MỀM VÀ VỆ SINH MÁY CƠ BẢN MIỄN PHÍ TRỌN ĐỜI.
+            </p>
+            <p className="mt-2 italic">☞ Khách hàng xác nhận: Đã kiểm tra máy và đọc kĩ chế độ bảo hành.</p>
           </div>
         )}
 
