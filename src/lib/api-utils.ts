@@ -101,6 +101,7 @@ type MachineRow = {
   condition: string;
   category: string | null;
   purchasePrice: number;
+  salePrice?: number | null;
   source: string;
   status: string;
   note: string | null;
@@ -124,6 +125,7 @@ export function serializeMachine(m: MachineRow) {
     condition: m.condition,
     category: m.category ?? undefined,
     purchasePrice: m.purchasePrice,
+    salePrice: m.salePrice ?? undefined,
     source: m.source,
     status: m.status,
     note: m.note ?? undefined,

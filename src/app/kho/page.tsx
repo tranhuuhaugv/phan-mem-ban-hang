@@ -60,8 +60,8 @@ export default function KhoPage() {
         subtitle={`${machines.length} máy trong hệ thống · bấm vào tên sản phẩm để xem lịch sử`}
         actions={
           perm.create && (
-            <Button href="/kho/them">
-              <Plus size={16} /> Thêm máy mới
+            <Button href="/kho/nhap">
+              <Plus size={16} /> Nhập kho
             </Button>
           )
         }

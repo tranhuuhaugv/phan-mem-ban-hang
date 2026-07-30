@@ -3,6 +3,7 @@ import type { MenuKey } from "./permissions";
 export interface NavLink {
   label: string;
   href: string;
+  menu?: MenuKey; // nếu link thuộc một menu khác → ẩn/hiện theo quyền của menu đó
 }
 export interface NavItem {
   key: MenuKey;
@@ -39,6 +40,9 @@ export const NAV: NavItem[] = [
     links: [
       { label: "Dashboard", href: "/tong-quan" },
       { label: "Biểu đồ doanh thu", href: "/tong-quan#bieu-do" },
+      { label: "Danh mục sản phẩm", href: "/danh-muc", menu: "danh-muc" },
+      { label: "Nhà cung cấp", href: "/nha-cung-cap", menu: "nha-cung-cap" },
+      { label: "Chi nhánh", href: "/chi-nhanh", menu: "chi-nhanh" },
     ],
   },
   {
@@ -49,17 +53,9 @@ export const NAV: NavItem[] = [
     href: "/kho",
     links: [
       { label: "Danh sách tồn kho", href: "/kho" },
-      { label: "Thêm máy mới", href: "/kho/them" },
+      { label: "Nhập kho", href: "/kho/nhap" },
       { label: "Kiểm kê", href: "/kho/kiem-ke" },
     ],
-  },
-  {
-    key: "danh-muc",
-    label: "Danh mục",
-    icon: "Tags",
-    color: "#7c3aed",
-    href: "/danh-muc",
-    links: [{ label: "Danh mục sản phẩm", href: "/danh-muc" }],
   },
   {
     key: "thu-may",
@@ -125,22 +121,6 @@ export const NAV: NavItem[] = [
     color: "#0d9488",
     href: "/khach-hang",
     links: [{ label: "Danh sách khách hàng", href: "/khach-hang" }],
-  },
-  {
-    key: "nha-cung-cap",
-    label: "Nhà cung cấp",
-    icon: "Truck",
-    color: "#ca8a04",
-    href: "/nha-cung-cap",
-    links: [{ label: "Danh sách nhà cung cấp", href: "/nha-cung-cap" }],
-  },
-  {
-    key: "chi-nhanh",
-    label: "Chi nhánh",
-    icon: "Building2",
-    color: "#0369a1",
-    href: "/chi-nhanh",
-    links: [{ label: "Danh sách chi nhánh", href: "/chi-nhanh" }],
   },
   {
     key: "cai-dat",

@@ -76,6 +76,7 @@ model Machine {
   condition     Condition
   category      String? // loại sản phẩm: Laptop / Macbook / Phụ kiện...
   purchasePrice Int
+  salePrice     Int? // giá bán niêm yết (tuỳ chọn)
   source        String
   status        MachineStatus @default(ton_kho)
   note          String?

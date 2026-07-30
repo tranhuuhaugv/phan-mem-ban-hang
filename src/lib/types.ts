@@ -44,6 +44,7 @@ export interface Machine {
   condition: Condition; // Ngoại hình / loại
   category?: string; // Danh mục: Laptop / Macbook / Phụ kiện...
   purchasePrice: number; // Giá nhập
+  salePrice?: number; // Giá bán niêm yết
   source: string; // Nguồn nhập
   status: MachineStatus;
   note?: string;

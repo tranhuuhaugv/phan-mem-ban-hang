@@ -6,15 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Boxes,
-  Tags,
   PackagePlus,
   ShoppingCart,
   Wrench,
   Wallet,
   ReceiptText,
   Users,
-  Truck,
-  Building2,
   Settings,
   Laptop,
   ChevronDown,
@@ -27,15 +24,12 @@ import { useRole } from "./role-context";
 const ICONS: Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
   LayoutDashboard,
   Boxes,
-  Tags,
   PackagePlus,
   ShoppingCart,
   Wrench,
   Wallet,
   ReceiptText,
   Users,
-  Truck,
-  Building2,
   Settings,
 };
 
@@ -67,7 +61,10 @@ export function Topbar() {
     setUserMenu(false);
   }, [pathname]);
 
-  const isActive = (n: NavItem) => pathname === n.href || pathname.startsWith(n.href + "/");
+  const isActive = (n: NavItem) =>
+    pathname === n.href ||
+    pathname.startsWith(n.href + "/") ||
+    n.links.some((l) => l.menu && (pathname === l.href || pathname.startsWith(l.href + "/")));
 
   const toggle = (n: NavItem, e: React.MouseEvent<HTMLButtonElement>) => {
     if (n.links.length <= 1) {
@@ -135,7 +132,9 @@ export function Topbar() {
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: openItem.color }} />
                 {openItem.label}
               </div>
-              {openItem.links.map((l) => {
+              {openItem.links
+                .filter((l) => !l.menu || can(l.menu).view)
+                .map((l) => {
                 const childActive = pathname === l.href;
                 return (
                   <Link
