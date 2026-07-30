@@ -118,12 +118,10 @@ export const NAV: NavItem[] = [
     label: "Thu - Chi",
     icon: "Wallet",
     color: "#e11d48",
-    href: "/thu-chi",
+    href: "/thu-chi/thu",
     links: [
-      { label: "Tạo phiếu thu", href: "/thu-chi/thu" },
-      { label: "Tạo phiếu chi", href: "/thu-chi/chi" },
-      { label: "Sổ quỹ", href: "/thu-chi" },
-      { label: "Báo cáo lãi/lỗ", href: "/thu-chi/bao-cao" },
+      { label: "Danh sách phiếu thu", href: "/thu-chi/thu" },
+      { label: "Danh sách phiếu chi", href: "/thu-chi/chi" },
     ],
   },
   {

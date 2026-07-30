@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Save } from "lucide-react";
-import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
-import { Button, PageHeader, Field, Input, Select } from "@/components/ui";
+import { Plus, ArrowUpCircle } from "lucide-react";
+import { AccessGuard } from "@/components/parts";
+import { Button, PageHeader, Table, Tr, Td, Card, Field, Input, Select, SearchInput } from "@/components/ui";
+import { Modal } from "@/components/modal";
 import { useToast } from "@/components/toast";
-import { apiPost } from "@/lib/api";
+import { useRole } from "@/components/role-context";
+import { useApi, apiPost } from "@/lib/api";
 import type { CashFlow } from "@/lib/types";
+import { formatVND, formatDateTime } from "@/lib/format";
+
+const CATEGORIES = ["Bán hàng", "Thu nợ", "Sửa chữa", "Khác"];
 
 export default function Page() {
   return (
@@ -17,29 +21,43 @@ export default function Page() {
   );
 }
 
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function Inner() {
-  const router = useRouter();
+  const { can } = useRole();
+  const perm = can("thu-chi");
   const toast = useToast();
+  const { data, reload } = useApi<CashFlow[]>("/api/cashflows");
+  const rowsAll = (data ?? []).filter((c) => c.type === "thu");
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [f, setF] = useState({
-    date: new Date().toISOString().slice(0, 10),
-    amount: "",
-    category: "Bán hàng",
-    partner: "",
-    content: "",
-  });
+  const [f, setF] = useState({ date: todayISO(), amount: "", category: "Bán hàng", partner: "", content: "" });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setF((s) => ({ ...s, [k]: e.target.value }));
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const total = rowsAll.reduce((s, c) => s + c.amount, 0);
+  const rows = rowsAll
+    .filter((c) => `${c.code} ${c.content} ${c.category} ${c.partner ?? ""}`.toLowerCase().includes(q.trim().toLowerCase()))
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  const openCreate = () => {
+    setF({ date: todayISO(), amount: "", category: "Bán hàng", partner: "", content: "" });
+    setOpen(true);
+  };
+  const save = async () => {
+    if (!f.content.trim()) return toast("Nhập nội dung phiếu", "warning");
+    if (!Number(f.amount)) return toast("Nhập số tiền", "warning");
     setBusy(true);
     try {
       const row = await apiPost<CashFlow>("/api/cashflows", { ...f, type: "thu", amount: Number(f.amount) || 0 });
       toast(`Đã tạo phiếu thu ${row.code}`);
-      router.push("/thu-chi");
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "Tạo phiếu thất bại", "warning");
+      setOpen(false);
+      reload();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Tạo phiếu thất bại", "warning");
     } finally {
       setBusy(false);
     }
@@ -47,20 +65,73 @@ function Inner() {
 
   return (
     <div>
-      <BackLink href="/thu-chi">Về sổ quỹ</BackLink>
-      <PageHeader title="Tạo phiếu thu" subtitle="Ghi nhận khoản tiền thu vào (bán hàng, thu nợ...)" />
-      <form onSubmit={submit} className="max-w-3xl space-y-3">
-        <SectionCard>
+      <PageHeader
+        title="Danh sách phiếu thu"
+        subtitle="Các khoản tiền thu vào (bán hàng, thu nợ, sửa chữa...)"
+        actions={
+          perm.create && (
+            <Button onClick={openCreate}>
+              <Plus size={16} /> Tạo phiếu thu
+            </Button>
+          )
+        }
+      />
+
+      <Card className="mb-4 p-4" style={{ background: "linear-gradient(135deg, #05966914, var(--surface) 55%)", borderColor: "#05966930" }}>
+        <p className="text-sm font-medium text-[var(--success)]">Tổng thu ({rowsAll.length} phiếu)</p>
+        <p className="mt-1 text-2xl font-bold text-[var(--success)]">{formatVND(total)}</p>
+      </Card>
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, nội dung, nguồn thu, người nộp..." className="max-w-md" />
+      </div>
+
+      <Table head={["Mã phiếu", "Ngày", "Nội dung", "Nguồn thu", "Người nộp", "Số tiền"]}>
+        {rows.map((c) => (
+          <Tr key={c.id}>
+            <Td className="font-mono text-xs font-medium">{c.code}</Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDateTime(c.date)}</Td>
+            <Td>{c.content}</Td>
+            <Td className="text-[var(--muted)]">{c.category}</Td>
+            <Td className="text-sm">{c.partner || <span className="text-[var(--muted)]">—</span>}</Td>
+            <Td className="whitespace-nowrap font-medium text-[var(--success)]">+{formatVND(c.amount)}</Td>
+          </Tr>
+        ))}
+        {rows.length === 0 && (
+          <Tr>
+            <Td className="text-center text-[var(--muted)]">
+              <div className="py-6">Chưa có phiếu thu nào</div>
+            </Td>
+          </Tr>
+        )}
+      </Table>
+
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Tạo phiếu thu"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Huỷ
+            </Button>
+            <Button onClick={save} disabled={busy}>
+              <ArrowUpCircle size={16} /> {busy ? "Đang lưu..." : "Lưu phiếu thu"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Ngày">
-              <Input type="date" value={f.date} onChange={set("date")} required />
+              <Input type="date" value={f.date} onChange={set("date")} />
             </Field>
             <Field label="Số tiền (₫) *">
-              <Input type="number" value={f.amount} onChange={set("amount")} placeholder="VD: 5000000" required />
+              <Input type="number" value={f.amount} onChange={set("amount")} placeholder="VD: 5000000" autoFocus />
             </Field>
             <Field label="Nguồn thu">
               <Select value={f.category} onChange={set("category")}>
-                {["Bán hàng", "Thu nợ", "Sửa chữa", "Khác"].map((x) => (
+                {CATEGORIES.map((x) => (
                   <option key={x}>{x}</option>
                 ))}
               </Select>
@@ -69,21 +140,11 @@ function Inner() {
               <Input value={f.partner} onChange={set("partner")} placeholder="Tên khách / đối tác" />
             </Field>
           </div>
-          <div className="mt-3">
-            <Field label="Nội dung *">
-              <Input value={f.content} onChange={set("content")} placeholder="VD: Cọc đơn DH-0128" required />
-            </Field>
-          </div>
-        </SectionCard>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" href="/thu-chi">
-            Huỷ
-          </Button>
-          <Button type="submit" disabled={busy}>
-            <Save size={16} /> {busy ? "Đang lưu..." : "Lưu phiếu thu"}
-          </Button>
+          <Field label="Nội dung *">
+            <Input value={f.content} onChange={set("content")} placeholder="VD: Thu tiền bán máy SP0001" />
+          </Field>
         </div>
-      </form>
+      </Modal>
     </div>
   );
 }
