@@ -65,8 +65,8 @@ export const NAV: NavItem[] = [
     color: "#0284c7",
     href: "/kho/phieu-nhap",
     links: [
-      { label: "Danh sách phiếu nhập", href: "/kho/phieu-nhap" },
       { label: "Tạo phiếu nhập", href: "/kho/nhap" },
+      { label: "Danh sách phiếu nhập", href: "/kho/phieu-nhap" },
     ],
   },
   {
@@ -76,8 +76,8 @@ export const NAV: NavItem[] = [
     color: "#7c3aed",
     href: "/kho/chuyen-kho",
     links: [
-      { label: "Danh sách phiếu chuyển", href: "/kho/chuyen-kho" },
       { label: "Tạo phiếu chuyển", href: "/kho/chuyen-kho/tao" },
+      { label: "Danh sách phiếu chuyển", href: "/kho/chuyen-kho" },
     ],
   },
   {
@@ -87,8 +87,8 @@ export const NAV: NavItem[] = [
     color: "#0891b2",
     href: "/thu-may",
     links: [
-      { label: "Danh sách phiếu", href: "/thu-may" },
       { label: "Tạo phiếu thu máy", href: "/thu-may/tao" },
+      { label: "Danh sách phiếu", href: "/thu-may" },
     ],
   },
   {
@@ -98,8 +98,8 @@ export const NAV: NavItem[] = [
     color: "#059669",
     href: "/dat-hang",
     links: [
-      { label: "Danh sách đơn hàng", href: "/dat-hang" },
       { label: "Tạo đơn đặt hàng", href: "/dat-hang/tao" },
+      { label: "Danh sách đơn hàng", href: "/dat-hang" },
     ],
   },
   {
@@ -109,8 +109,8 @@ export const NAV: NavItem[] = [
     color: "#ea580c",
     href: "/sua-chua",
     links: [
-      { label: "Danh sách phiếu", href: "/sua-chua" },
       { label: "Tạo phiếu sửa chữa", href: "/sua-chua/tao" },
+      { label: "Danh sách phiếu", href: "/sua-chua" },
     ],
   },
   {
@@ -120,9 +120,9 @@ export const NAV: NavItem[] = [
     color: "#e11d48",
     href: "/thu-chi",
     links: [
-      { label: "Sổ quỹ", href: "/thu-chi" },
       { label: "Tạo phiếu thu", href: "/thu-chi/thu" },
       { label: "Tạo phiếu chi", href: "/thu-chi/chi" },
+      { label: "Sổ quỹ", href: "/thu-chi" },
       { label: "Báo cáo lãi/lỗ", href: "/thu-chi/bao-cao" },
     ],
   },
@@ -133,8 +133,8 @@ export const NAV: NavItem[] = [
     color: "#db2777",
     href: "/hoa-don",
     links: [
-      { label: "Danh sách hoá đơn", href: "/hoa-don" },
       { label: "Tạo hoá đơn", href: "/hoa-don/tao" },
+      { label: "Danh sách hoá đơn", href: "/hoa-don" },
     ],
   },
   {
