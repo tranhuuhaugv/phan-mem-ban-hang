@@ -1,10 +1,14 @@
 "use client";
 
-import { use } from "react";
-import { Printer, ShieldCheck, Loader2 } from "lucide-react";
+import { use, useState } from "react";
+import { Printer, ShieldCheck, Loader2, HandCoins, Wallet, CreditCard } from "lucide-react";
 import { AccessGuard, BackLink } from "@/components/parts";
-import { Button, PageHeader, Card } from "@/components/ui";
-import { useApi } from "@/lib/api";
+import { Button, PageHeader, Card, Field, Input } from "@/components/ui";
+import { Modal } from "@/components/modal";
+import { useToast } from "@/components/toast";
+import { useRole } from "@/components/role-context";
+import { useApi, apiPost } from "@/lib/api";
+import { PAY_METHOD_LABEL } from "@/lib/types";
 import { formatVND, formatDate, formatDateTime } from "@/lib/format";
 
 interface InvoiceDetail {
@@ -16,9 +20,13 @@ interface InvoiceDetail {
   customerName: string;
   phone: string;
   value: number;
+  paid: number;
+  debt: number;
+  payMethod?: string;
   date: string;
   items: { id: string; serial: string; name: string; config: string; price: number }[];
   warranties: { id: string; serial: string; months: number; condition: string; startDate: string }[];
+  payments: { id: string; code: string; amount: number; method?: string; date: string }[];
 }
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
@@ -31,7 +39,37 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 }
 
 function Inner({ id }: { id: string }) {
-  const { data: iv, loading, error } = useApi<InvoiceDetail>(`/api/invoices/${id}`);
+  const { data: iv, loading, error, reload } = useApi<InvoiceDetail>(`/api/invoices/${id}`);
+  const { can } = useRole();
+  const toast = useToast();
+  const [openPay, setOpenPay] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
+  const [busy, setBusy] = useState(false);
+
+  const openPayModal = (debt: number) => {
+    setAmount(String(debt));
+    setMethod("tien_mat");
+    setOpenPay(true);
+  };
+  const pay = async () => {
+    const amt = Math.round(Number(amount) || 0);
+    if (amt <= 0) {
+      toast("Nhập số tiền thanh toán", "warning");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await apiPost<{ paid: number; debt: number }>(`/api/invoices/${id}/pay`, { amount: amt, method });
+      toast(res.debt > 0 ? `Đã thu ${formatVND(res.paid)} — còn nợ ${formatVND(res.debt)}` : "Đã thu đủ hoá đơn");
+      setOpenPay(false);
+      reload();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Thanh toán thất bại", "warning");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -57,9 +95,16 @@ function Inner({ id }: { id: string }) {
           title={`Hoá đơn ${iv.code}`}
           subtitle="Xem trước bản in — bấm In để in hoặc lưu PDF"
           actions={
-            <Button onClick={() => window.print()}>
-              <Printer size={16} /> In / Xuất PDF
-            </Button>
+            <div className="flex gap-2">
+              {iv.debt > 0 && can("hoa-don").create && (
+                <Button variant="outline" onClick={() => openPayModal(iv.debt)}>
+                  <HandCoins size={16} /> Thanh toán
+                </Button>
+              )}
+              <Button onClick={() => window.print()}>
+                <Printer size={16} /> In / Xuất PDF
+              </Button>
+            </div>
           }
         />
       </div>
@@ -124,6 +169,16 @@ function Inner({ id }: { id: string }) {
               <span>Tổng cộng</span>
               <span>{formatVND(iv.value)}</span>
             </div>
+            <div className="flex justify-between pt-1 text-[var(--muted)]">
+              <span>Đã thanh toán</span>
+              <span className="font-medium text-[var(--success)]">{formatVND(iv.paid)}</span>
+            </div>
+            {iv.debt > 0 && (
+              <div className="flex justify-between font-semibold">
+                <span>Còn nợ</span>
+                <span className="text-[var(--danger)]">{formatVND(iv.debt)}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -152,6 +207,86 @@ function Inner({ id }: { id: string }) {
           </div>
         </div>
       </Card>
+
+      {/* Lịch sử thanh toán — không in */}
+      <Card className="mt-4 p-4 print:hidden">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-[13px] font-semibold uppercase tracking-wide text-[var(--muted)]">Lịch sử thanh toán</h2>
+          {iv.debt > 0 && can("hoa-don").create && (
+            <Button size="sm" onClick={() => openPayModal(iv.debt)}>
+              <HandCoins size={15} /> Thu tiền
+            </Button>
+          )}
+        </div>
+        {iv.payments.length === 0 ? (
+          <div className="py-3 text-center text-sm text-[var(--muted)]">Chưa có lần thu nào</div>
+        ) : (
+          <div className="divide-y divide-[var(--border)]">
+            {iv.payments.map((p) => (
+              <div key={p.id} className="flex items-center justify-between py-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs text-[var(--muted)]">{p.code}</span>
+                  <span className="text-[var(--muted)]">{formatDate(p.date)}</span>
+                  {p.method && (
+                    <span className="inline-flex items-center gap-1 text-xs text-[var(--muted)]">
+                      {p.method === "chuyen_khoan" ? <CreditCard size={12} /> : <Wallet size={12} />}
+                      {PAY_METHOD_LABEL[p.method] ?? p.method}
+                    </span>
+                  )}
+                </div>
+                <span className="font-medium text-[var(--success)]">{formatVND(p.amount)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Modal
+        open={openPay}
+        onClose={() => setOpenPay(false)}
+        title="Thanh toán hoá đơn"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setOpenPay(false)}>
+              Huỷ
+            </Button>
+            <Button onClick={pay} disabled={busy}>
+              {busy ? "Đang lưu..." : "Xác nhận thu"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div className="rounded-lg bg-[var(--surface-2)] px-3 py-2 text-sm">
+            Còn nợ: <span className="font-semibold text-[var(--danger)]">{formatVND(iv.debt)}</span>
+          </div>
+          <Field label="Số tiền thu (₫)" hint="Tối đa bằng số còn nợ; thu một phần cũng được">
+            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" autoFocus />
+          </Field>
+          <Field label="Hình thức">
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { k: "tien_mat", label: "Tiền mặt", icon: Wallet },
+                { k: "chuyen_khoan", label: "Chuyển khoản", icon: CreditCard },
+              ] as const).map(({ k, label, icon: Icon }) => {
+                const active = method === k;
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setMethod(k)}
+                    className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                      active ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--surface-2)]"
+                    }`}
+                  >
+                    <Icon size={16} /> {label}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+        </div>
+      </Modal>
     </div>
   );
 }

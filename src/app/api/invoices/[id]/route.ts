@@ -17,6 +17,7 @@ export const GET = handler(async (_req: Request, { params }: Ctx) => {
     },
   });
   if (!row) throw new HttpError(404, "Không tìm thấy hoá đơn");
+  const payments = await db.cashFlow.findMany({ where: { invoiceId: id, type: "thu" }, orderBy: { date: "asc" } });
   return ok({
     ...serializeInvoice(row),
     warranties: row.warranties.map((w) => ({
@@ -25,6 +26,13 @@ export const GET = handler(async (_req: Request, { params }: Ctx) => {
       months: w.months,
       condition: w.condition,
       startDate: w.startDate.toISOString(),
+    })),
+    payments: payments.map((p) => ({
+      id: p.id,
+      code: p.code,
+      amount: p.amount,
+      method: p.method ?? undefined,
+      date: p.date.toISOString(),
     })),
   });
 });

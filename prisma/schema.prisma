@@ -227,6 +227,7 @@ model CashFlow {
   partner    String?
   method     String? // hình thức: tien_mat | chuyen_khoan
   supplierId String? // gắn phiếu chi với NCC (thanh toán nhập hàng)
+  invoiceId  String? // gắn phiếu thu với hoá đơn (thanh toán bán hàng)
 }
 
 // Hoá đơn / phiếu thanh toán — gắn đơn hàng, phiếu sửa, hoặc bán trực tiếp
@@ -236,6 +237,8 @@ model Invoice {
   customerName String
   phone        String?
   total        Int
+  paid         Int      @default(0) // đã thanh toán (còn nợ = total - paid)
+  payMethod    String? // hình thức lần thu gần nhất: tien_mat | chuyen_khoan
   kind         String   @default("ban") // ban | don_hang | sua_chua
   createdAt    DateTime @default(now())
 

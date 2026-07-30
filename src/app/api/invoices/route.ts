@@ -42,6 +42,8 @@ export const POST = handler(async (req: Request) => {
           customerName: custName,
           phone: custPhone || null,
           total: cost,
+          paid: cost,
+          payMethod: "tien_mat",
           repairId: repair.id,
           items: {
             create: [
@@ -65,6 +67,7 @@ export const POST = handler(async (req: Request) => {
           content: `Thu tiền công sửa - phiếu ${repair.code} (HĐ ${code})`,
           category: "Sửa chữa",
           partner: custName,
+          invoiceId: invoice.id,
         },
       });
       return invoice;
@@ -86,6 +89,8 @@ export const POST = handler(async (req: Request) => {
           customerName: order.customerName,
           phone: order.phone || null,
           total: order.sellPrice,
+          paid: order.sellPrice,
+          payMethod: "tien_mat",
           orderId: order.id,
           items: {
             create: [
@@ -115,6 +120,7 @@ export const POST = handler(async (req: Request) => {
               content: `Thanh toán đơn ${order.code} (HĐ ${code})`,
               category: "Bán hàng",
               partner: order.customerName,
+              invoiceId: invoice.id,
             },
           });
         }
@@ -148,6 +154,13 @@ export const POST = handler(async (req: Request) => {
 
   const total = items.reduce((s, i) => s + Number(i.price), 0);
 
+  // Thanh toán: mặc định thu đủ; cho phép thu một phần → phần còn lại là công nợ khách
+  const paid =
+    b.amountPaid === undefined || b.amountPaid === null || b.amountPaid === ""
+      ? total
+      : Math.max(0, Math.min(total, Math.round(Number(b.amountPaid) || 0)));
+  const payMethod = b.payMethod === "chuyen_khoan" ? "chuyen_khoan" : "tien_mat";
+
   const custName = String(b.customerName ?? "Khách lẻ").trim() || "Khách lẻ";
   const custPhone = b.phone ? String(b.phone).trim() : "";
 
@@ -162,6 +175,8 @@ export const POST = handler(async (req: Request) => {
         customerName: custName,
         phone: custPhone || null,
         total,
+        paid,
+        payMethod,
         items: {
           create: items.map((i) => {
             const m = machines.find((x) => x.serial === i.serial)!;
@@ -179,17 +194,21 @@ export const POST = handler(async (req: Request) => {
 
     await tx.machine.updateMany({ where: { id: { in: machines.map((m) => m.id) } }, data: { status: "da_ban" } });
 
-    const cashCode = await nextCode("cashFlow", "PT-", 4);
-    await tx.cashFlow.create({
-      data: {
-        code: cashCode,
-        type: "thu",
-        amount: total,
-        content: `Bán hàng - hoá đơn ${code} (${items.length} sản phẩm)`,
-        category: "Bán hàng",
-        partner: invoice.customerName,
-      },
-    });
+    if (paid > 0) {
+      const cashCode = await nextCode("cashFlow", "PT-", 4);
+      await tx.cashFlow.create({
+        data: {
+          code: cashCode,
+          type: "thu",
+          amount: paid,
+          content: `Bán hàng - hoá đơn ${code}${paid < total ? " (trả một phần)" : ""}`,
+          category: "Bán hàng",
+          partner: invoice.customerName,
+          method: payMethod,
+          invoiceId: invoice.id,
+        },
+      });
+    }
 
     if (b.warranty?.months) {
       for (const m of machines) {

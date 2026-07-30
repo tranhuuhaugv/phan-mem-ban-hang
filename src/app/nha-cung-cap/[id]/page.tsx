@@ -1,12 +1,15 @@
 "use client";
 
-import { use } from "react";
-import { Loader2, Package, Wallet, CreditCard } from "lucide-react";
+import { use, useState } from "react";
+import { Loader2, Package, Wallet, CreditCard, HandCoins } from "lucide-react";
 import Link from "next/link";
 import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
-import { PageHeader, Card, Badge, Table, Tr, Td } from "@/components/ui";
+import { PageHeader, Card, Badge, Table, Tr, Td, Button, Field, Input } from "@/components/ui";
+import { Modal } from "@/components/modal";
 import { MachineStatusBadge } from "@/components/status";
-import { useApi } from "@/lib/api";
+import { useRole } from "@/components/role-context";
+import { useToast } from "@/components/toast";
+import { useApi, apiPost } from "@/lib/api";
 import { PAY_METHOD_LABEL, type MachineStatus } from "@/lib/types";
 import { formatVND, formatDate } from "@/lib/format";
 
@@ -37,7 +40,37 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 }
 
 function Inner({ id }: { id: string }) {
-  const { data, loading, error } = useApi<SupplierDetail>(`/api/suppliers/${id}`);
+  const { data, loading, error, reload } = useApi<SupplierDetail>(`/api/suppliers/${id}`);
+  const { can } = useRole();
+  const toast = useToast();
+  const [openPay, setOpenPay] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
+  const [busy, setBusy] = useState(false);
+
+  const openPayModal = (debt: number) => {
+    setAmount(String(debt));
+    setMethod("tien_mat");
+    setOpenPay(true);
+  };
+  const pay = async () => {
+    const amt = Math.round(Number(amount) || 0);
+    if (amt <= 0) {
+      toast("Nhập số tiền thanh toán", "warning");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await apiPost<{ paid: number; debt: number }>(`/api/suppliers/${id}/pay-debt`, { amount: amt, method });
+      toast(res.debt > 0 ? `Đã trả ${formatVND(res.paid)} — còn nợ ${formatVND(res.debt)}` : `Đã trả hết công nợ`);
+      setOpenPay(false);
+      reload();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Thanh toán thất bại", "warning");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -120,8 +153,15 @@ function Inner({ id }: { id: string }) {
             <div className="flex items-center gap-2 text-sm">
               <Wallet size={16} className="text-[var(--muted)]" /> Công nợ hiện tại
             </div>
-            <div className={`text-lg font-semibold ${stats.debt > 0 ? "text-[var(--danger)]" : "text-[var(--success)]"}`}>
-              {stats.debt > 0 ? formatVND(stats.debt) : "Không nợ"}
+            <div className="flex items-center gap-3">
+              <div className={`text-lg font-semibold ${stats.debt > 0 ? "text-[var(--danger)]" : "text-[var(--success)]"}`}>
+                {stats.debt > 0 ? formatVND(stats.debt) : "Không nợ"}
+              </div>
+              {stats.debt > 0 && can("nha-cung-cap").edit && (
+                <Button size="sm" onClick={() => openPayModal(stats.debt)}>
+                  <HandCoins size={15} /> Thanh toán
+                </Button>
+              )}
             </div>
           </div>
 
@@ -154,6 +194,53 @@ function Inner({ id }: { id: string }) {
           </Table>
         </SectionCard>
       </div>
+
+      <Modal
+        open={openPay}
+        onClose={() => setOpenPay(false)}
+        title="Thanh toán công nợ NCC"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setOpenPay(false)}>
+              Huỷ
+            </Button>
+            <Button onClick={pay} disabled={busy}>
+              {busy ? "Đang lưu..." : "Xác nhận trả"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div className="rounded-lg bg-[var(--surface-2)] px-3 py-2 text-sm">
+            Công nợ hiện tại: <span className="font-semibold text-[var(--danger)]">{formatVND(stats.debt)}</span>
+          </div>
+          <Field label="Số tiền thanh toán (₫)" hint="Tối đa bằng công nợ; trả một phần cũng được">
+            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" autoFocus />
+          </Field>
+          <Field label="Hình thức">
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { k: "tien_mat", label: "Tiền mặt", icon: Wallet },
+                { k: "chuyen_khoan", label: "Chuyển khoản", icon: CreditCard },
+              ] as const).map(({ k, label, icon: Icon }) => {
+                const active = method === k;
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setMethod(k)}
+                    className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                      active ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--surface-2)]"
+                    }`}
+                  >
+                    <Icon size={16} /> {label}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+        </div>
+      </Modal>
     </div>
   );
 }

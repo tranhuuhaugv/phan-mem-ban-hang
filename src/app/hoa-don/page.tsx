@@ -44,7 +44,7 @@ function Inner() {
       {rows.length === 0 ? (
         <EmptyState text={loading ? "Đang tải dữ liệu..." : q ? "Không tìm thấy hoá đơn phù hợp" : "Chưa có hoá đơn nào"} />
       ) : (
-        <Table head={["Mã hoá đơn", "Nguồn", "Khách hàng", "Giá trị", "Ngày lập", ""]}>
+        <Table head={["Mã hoá đơn", "Nguồn", "Khách hàng", "Giá trị", "Còn nợ", "Ngày lập", ""]}>
           {rows.map((iv) => (
             <Tr key={iv.id}>
               <Td className="font-mono text-xs font-medium">{iv.code}</Td>
@@ -59,6 +59,13 @@ function Inner() {
               </Td>
               <Td className="font-medium">{iv.customerName}</Td>
               <Td className="whitespace-nowrap font-medium">{formatVND(iv.value)}</Td>
+              <Td className="whitespace-nowrap">
+                {iv.debt && iv.debt > 0 ? (
+                  <span className="font-medium text-[var(--danger)]">{formatVND(iv.debt)}</span>
+                ) : (
+                  <span className="text-xs text-[var(--muted)]">Đủ</span>
+                )}
+              </Td>
               <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDateTime(iv.date)}</Td>
               <Td>
                 <div className="flex justify-end">

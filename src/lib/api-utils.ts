@@ -257,12 +257,15 @@ export function serializeInvoice(iv: {
   customerName: string;
   phone: string | null;
   total: number;
+  paid?: number;
+  payMethod?: string | null;
   kind?: string;
   createdAt: Date;
   order?: { code: string } | null;
   repair?: { code: string } | null;
   items?: { id: string; name: string; config: string; price: number; machine?: { serial: string } | null }[];
 }) {
+  const paid = iv.paid ?? 0;
   return {
     id: iv.id,
     code: iv.code,
@@ -272,6 +275,9 @@ export function serializeInvoice(iv: {
     customerName: iv.customerName,
     phone: iv.phone ?? "",
     value: iv.total,
+    paid,
+    debt: iv.total - paid,
+    payMethod: iv.payMethod ?? undefined,
     date: iv.createdAt.toISOString(),
     items: iv.items?.map((it) => ({
       id: it.id,

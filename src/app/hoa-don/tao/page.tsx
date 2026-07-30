@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, FileText, PackageOpen, Plus, Trash2, Search, Wrench } from "lucide-react";
+import { Save, FileText, PackageOpen, Plus, Trash2, Search, Wrench, Wallet, CreditCard } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard, DetailRow } from "@/components/parts";
 import { CustomerField } from "@/components/customer-field";
 import { Button, PageHeader, Field, Input, Select, Textarea } from "@/components/ui";
@@ -45,6 +45,8 @@ function Inner() {
   const [withWarranty, setWithWarranty] = useState(false);
   const [wMonths, setWMonths] = useState("6");
   const [wCondition, setWCondition] = useState("");
+  const [amountPaid, setAmountPaid] = useState("");
+  const [payMethod, setPayMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
   const [busy, setBusy] = useState(false);
 
   // Nhận link từ đơn hàng (?order=) hoặc phiếu sửa (?repair=)
@@ -113,6 +115,8 @@ function Inner() {
               phone,
               items: items.map((i) => ({ serial: i.serial, price: i.price })),
               warranty,
+              amountPaid: amountPaid === "" ? undefined : Number(amountPaid) || 0,
+              payMethod,
             }
           : mode === "order"
             ? { mode: "order", orderId, warranty }
@@ -334,6 +338,65 @@ function Inner() {
               </SectionCard>
             </div>
           </div>
+        )}
+
+        {mode === "direct" && (
+          <SectionCard title="Thanh toán">
+            {(() => {
+              const paid = amountPaid === "" ? total : Math.max(0, Math.min(total, Math.round(Number(amountPaid) || 0)));
+              const debt = total - paid;
+              return (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-3">
+                    <Field label="Số tiền khách trả (₫)" hint="Để trống = thu đủ; nhập ít hơn = khách còn nợ">
+                      <div className="flex gap-2">
+                        <Input type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder={`Thu đủ ${formatVND(total)}`} className="flex-1" />
+                        <Button type="button" variant="outline" onClick={() => setAmountPaid(String(total))} disabled={total <= 0}>
+                          Trả đủ
+                        </Button>
+                      </div>
+                    </Field>
+                    <Field label="Hình thức">
+                      <div className="grid grid-cols-2 gap-2">
+                        {([
+                          { k: "tien_mat", label: "Tiền mặt", icon: Wallet },
+                          { k: "chuyen_khoan", label: "Chuyển khoản", icon: CreditCard },
+                        ] as const).map(({ k, label, icon: Icon }) => {
+                          const active = payMethod === k;
+                          return (
+                            <button
+                              key={k}
+                              type="button"
+                              onClick={() => setPayMethod(k)}
+                              className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                                active ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--surface-2)]"
+                              }`}
+                            >
+                              <Icon size={16} /> {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </Field>
+                  </div>
+                  <div className="space-y-2 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--muted)]">Tổng tiền</span>
+                      <span className="font-medium">{formatVND(total)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--muted)]">Khách trả</span>
+                      <span className="font-medium text-[var(--success)]">{formatVND(paid)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-[var(--border)] pt-2">
+                      <span className="text-[var(--muted)]">Còn nợ</span>
+                      <span className={`font-semibold ${debt > 0 ? "text-[var(--danger)]" : ""}`}>{formatVND(debt)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </SectionCard>
         )}
 
         <div className="flex items-center justify-end gap-2">

@@ -182,6 +182,9 @@ export interface Invoice {
   repairCode?: string; // Mã phiếu sửa liên kết
   customerName: string;
   value: number; // Giá trị
+  paid?: number; // đã thanh toán
+  debt?: number; // còn nợ (value - paid)
+  payMethod?: string;
   date: string; // Ngày lập
 }
 
