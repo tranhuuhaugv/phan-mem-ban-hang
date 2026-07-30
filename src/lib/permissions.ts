@@ -4,6 +4,7 @@ import type { Role } from "./types";
 export type MenuKey =
   | "tong-quan"
   | "kho"
+  | "nhap-kho"
   | "danh-muc"
   | "thu-may"
   | "dat-hang"
@@ -39,6 +40,11 @@ export const PERMISSIONS: Record<MenuKey, Record<Role, Permission>> = {
     admin: FULL,
     manager: FULL,
     staff: { view: true, create: true, edit: true, remove: false }, // không xoá
+  },
+  "nhap-kho": {
+    admin: FULL,
+    manager: FULL,
+    staff: { view: true, create: true, edit: false, remove: false }, // được nhập kho
   },
   "danh-muc": {
     admin: FULL,

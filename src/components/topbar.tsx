@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Boxes,
+  Warehouse,
   PackagePlus,
   ShoppingCart,
   Wrench,
@@ -24,6 +25,7 @@ import { useRole } from "./role-context";
 const ICONS: Record<string, React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
   LayoutDashboard,
   Boxes,
+  Warehouse,
   PackagePlus,
   ShoppingCart,
   Wrench,

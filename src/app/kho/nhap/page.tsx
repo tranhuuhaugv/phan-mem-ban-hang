@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Plus, RefreshCw, Package } from "lucide-react";
+import { Save, Plus, RefreshCw } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { Button, PageHeader, Field, Input, Select } from "@/components/ui";
 import { Modal } from "@/components/modal";
@@ -11,20 +11,9 @@ import { useApi, apiPost } from "@/lib/api";
 import type { Category, Branch, Supplier } from "@/lib/types";
 import { formatVND } from "@/lib/format";
 
-// Sản phẩm đang soạn (chưa lưu) để nhập kho
-interface DraftProduct {
-  category: string;
-  name: string;
-  serial: string;
-  salePrice: string;
-  description: string;
-}
-
-const EMPTY_PRODUCT: DraftProduct = { category: "", name: "", serial: "", salePrice: "", description: "" };
-
 export default function Page() {
   return (
-    <AccessGuard menu="kho">
+    <AccessGuard menu="nhap-kho">
       <Inner />
     </AccessGuard>
   );
@@ -41,37 +30,29 @@ function Inner() {
   const { data: branches } = useApi<Branch[]>("/api/branches");
   const { data: suppliers, reload: reloadSuppliers } = useApi<Supplier[]>("/api/suppliers");
 
+  // Phiếu nhập
   const [date, setDate] = useState(todayISO());
   const [branchId, setBranchId] = useState("");
   const [supplierId, setSupplierId] = useState("");
-  const [product, setProduct] = useState<DraftProduct | null>(null);
+  // Sản phẩm
+  const [category, setCategory] = useState("");
+  const [name, setName] = useState("");
+  const [serial, setSerial] = useState("");
+  const [salePrice, setSalePrice] = useState("");
+  const [description, setDescription] = useState("");
+  // Số lượng / giá nhập
   const [quantity, setQuantity] = useState("1");
   const [unitPrice, setUnitPrice] = useState("");
   const [busy, setBusy] = useState(false);
-
-  // Modal thêm sản phẩm
-  const [openProduct, setOpenProduct] = useState(false);
-  const [pf, setPf] = useState<DraftProduct>(EMPTY_PRODUCT);
-  const setPF = (k: keyof DraftProduct) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setPf((s) => ({ ...s, [k]: e.target.value }));
 
   // Modal thêm nhanh nhà cung cấp
   const [openSup, setOpenSup] = useState(false);
   const [sf, setSf] = useState({ name: "", phone: "" });
   const [supBusy, setSupBusy] = useState(false);
 
-  const openProductModal = () => {
-    setPf(product ?? { ...EMPTY_PRODUCT, category: categories?.[0]?.name ?? "" });
-    setOpenProduct(true);
-  };
-  const saveProduct = () => {
-    if (!pf.name.trim()) {
-      toast("Nhập Tên sản phẩm", "warning");
-      return;
-    }
-    setProduct({ ...pf, name: pf.name.trim() });
-    setOpenProduct(false);
-  };
+  const hasSerial = serial.trim() !== "";
+  const qty = hasSerial ? 1 : Math.max(1, Math.floor(Number(quantity) || 1));
+  const total = qty * (Number(unitPrice) || 0);
 
   const saveSupplier = async () => {
     if (!sf.name.trim()) {
@@ -97,21 +78,18 @@ function Inner() {
     setDate(todayISO());
     setBranchId("");
     setSupplierId("");
-    setProduct(null);
+    setCategory("");
+    setName("");
+    setSerial("");
+    setSalePrice("");
+    setDescription("");
     setQuantity("1");
     setUnitPrice("");
   };
 
-  const qty = Math.max(1, Math.floor(Number(quantity) || 1));
-  const total = qty * (Number(unitPrice) || 0);
-
   const save = async () => {
-    if (!product || !product.name.trim()) {
-      toast("Chọn Mặt hàng — bấm dấu + để thêm sản phẩm", "warning");
-      return;
-    }
-    if (product.serial.trim() && qty > 1) {
-      toast("Đã nhập Serial thì số lượng phải là 1", "warning");
+    if (!name.trim()) {
+      toast("Nhập Tên sản phẩm", "warning");
       return;
     }
     setBusy(true);
@@ -120,11 +98,11 @@ function Inner() {
         date,
         branchId: branchId || undefined,
         supplierId: supplierId || undefined,
-        category: product.category || undefined,
-        name: product.name,
-        serial: product.serial || undefined,
-        salePrice: product.salePrice || undefined,
-        description: product.description || undefined,
+        category: category || undefined,
+        name,
+        serial: serial || undefined,
+        salePrice: salePrice || undefined,
+        description: description || undefined,
         quantity: qty,
         unitPrice: Number(unitPrice) || 0,
       });
@@ -140,7 +118,7 @@ function Inner() {
   return (
     <div>
       <BackLink href="/kho">Về danh sách kho</BackLink>
-      <PageHeader title="Nhập kho" subtitle="Nhập sản phẩm mới vào kho — chọn chi nhánh, nhà cung cấp, mặt hàng rồi lưu" />
+      <PageHeader title="Nhập kho" subtitle="Nhập sản phẩm mới vào kho — điền thông tin phiếu và sản phẩm rồi bấm Lưu" />
 
       <div className="grid items-start gap-3 lg:grid-cols-2">
         <SectionCard title="Thông tin phiếu nhập">
@@ -176,53 +154,41 @@ function Inner() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Mặt hàng nhập">
+        <SectionCard title="Thông tin sản phẩm">
           <div className="space-y-3">
-            <Field label="Mặt hàng" hint="Bấm dấu + để thêm / sửa thông tin sản phẩm">
-              <div className="flex gap-2">
-                <Input
-                  value={product?.name ?? ""}
-                  readOnly
-                  placeholder="Chưa chọn sản phẩm"
-                  className="flex-1 cursor-pointer"
-                  onClick={openProductModal}
-                />
-                <Button type="button" onClick={openProductModal}>
-                  <Plus size={16} />
-                </Button>
-              </div>
+            <Field label="Danh mục">
+              <Select value={category} onChange={(e) => setCategory(e.target.value)}>
+                <option value="">— Chọn danh mục —</option>
+                {(categories ?? []).map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
             </Field>
-            {product && (
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-xs text-[var(--muted)]">
-                <div className="flex items-center gap-1.5 font-medium text-[var(--foreground)]">
-                  <Package size={13} /> {product.name}
-                </div>
-                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                  {product.category && <span>Danh mục: {product.category}</span>}
-                  {product.serial && <span>Serial: {product.serial}</span>}
-                  {product.salePrice && <span>Giá bán: {formatVND(Number(product.salePrice))}</span>}
-                </div>
-              </div>
-            )}
+            <Field label="Tên sản phẩm *">
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="VD: MacBook Pro 14 M1" />
+            </Field>
+            <Field label="Serial" hint="Bỏ trống = tự sinh mã SP khi lưu">
+              <Input value={serial} onChange={(e) => setSerial(e.target.value)} placeholder="Tuỳ chọn" />
+            </Field>
             <div className="grid grid-cols-2 gap-3">
+              <Field label="Giá bán (₫)">
+                <Input type="number" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} placeholder="Giá bán niêm yết" />
+              </Field>
               <Field label="Số lượng">
-                <Input
-                  type="number"
-                  min={1}
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  disabled={!!product?.serial.trim()}
-                />
+                <Input type="number" min={1} value={hasSerial ? "1" : quantity} onChange={(e) => setQuantity(e.target.value)} disabled={hasSerial} />
               </Field>
               <Field label="Đơn giá (₫)" hint="Giá nhập mỗi máy">
                 <Input type="number" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="0" />
               </Field>
+              <Field label="Mô tả">
+                <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Tuỳ chọn" />
+              </Field>
             </div>
-            {product?.serial.trim() && (
-              <p className="text-[11px] text-[var(--muted)]">Có Serial nên số lượng cố định = 1.</p>
-            )}
+            {hasSerial && <p className="text-[11px] text-[var(--muted)]">Có Serial nên số lượng cố định = 1.</p>}
             <div className="flex items-center justify-between border-t border-[var(--border)] pt-2 text-sm">
-              <span className="text-[var(--muted)]">Thành tiền</span>
+              <span className="text-[var(--muted)]">Thành tiền ({qty} máy)</span>
               <span className="font-semibold">{formatVND(total)}</span>
             </div>
           </div>
@@ -237,46 +203,6 @@ function Inner() {
           <Save size={16} /> {busy ? "Đang lưu..." : "Lưu"}
         </Button>
       </div>
-
-      {/* Modal thêm mới sản phẩm */}
-      <Modal
-        open={openProduct}
-        onClose={() => setOpenProduct(false)}
-        title="Thêm mới sản phẩm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setOpenProduct(false)}>
-              Huỷ
-            </Button>
-            <Button onClick={saveProduct}>{product ? "Cập nhật" : "Thêm mới"}</Button>
-          </>
-        }
-      >
-        <div className="space-y-3">
-          <Field label="Danh mục">
-            <Select value={pf.category} onChange={setPF("category")}>
-              <option value="">— Chọn danh mục —</option>
-              {(categories ?? []).map((c) => (
-                <option key={c.id} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Tên sản phẩm *">
-            <Input value={pf.name} onChange={setPF("name")} placeholder="VD: MacBook Pro 14 M1" autoFocus />
-          </Field>
-          <Field label="Serial" hint="Bỏ trống = tự sinh mã SP khi lưu">
-            <Input value={pf.serial} onChange={setPF("serial")} placeholder="Tuỳ chọn" />
-          </Field>
-          <Field label="Giá bán (₫)">
-            <Input type="number" value={pf.salePrice} onChange={setPF("salePrice")} placeholder="Giá bán niêm yết" />
-          </Field>
-          <Field label="Mô tả">
-            <Input value={pf.description} onChange={setPF("description")} placeholder="Tuỳ chọn" />
-          </Field>
-        </div>
-      </Modal>
 
       {/* Modal thêm nhanh nhà cung cấp */}
       <Modal

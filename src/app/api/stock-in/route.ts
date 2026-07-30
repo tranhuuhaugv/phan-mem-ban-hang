@@ -6,7 +6,7 @@ import type { Condition } from "@/generated/prisma/enums";
 // Nhập kho: tạo 1 hoặc nhiều máy vào kho từ 1 mặt hàng.
 // Body: { date?, branchId?, supplierId?, category?, name, serial?, salePrice?, description?, quantity?, unitPrice? }
 export const POST = handler(async (req: Request) => {
-  await requirePermission("kho", "create");
+  await requirePermission("nhap-kho", "create");
   const b = await req.json();
 
   const name = String(b.name ?? "").trim();

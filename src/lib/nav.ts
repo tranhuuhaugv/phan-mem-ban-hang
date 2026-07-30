@@ -17,6 +17,7 @@ export interface NavItem {
 export const MENU_LABEL: Record<MenuKey, string> = {
   "tong-quan": "Tổng quan",
   kho: "Kho sản phẩm",
+  "nhap-kho": "Nhập kho",
   "danh-muc": "Danh mục sản phẩm",
   "thu-may": "Thu máy",
   "dat-hang": "Đặt hàng",
@@ -53,9 +54,16 @@ export const NAV: NavItem[] = [
     href: "/kho",
     links: [
       { label: "Danh sách tồn kho", href: "/kho" },
-      { label: "Nhập kho", href: "/kho/nhap" },
       { label: "Kiểm kê", href: "/kho/kiem-ke" },
     ],
+  },
+  {
+    key: "nhap-kho",
+    label: "Nhập kho",
+    icon: "Warehouse",
+    color: "#0284c7",
+    href: "/kho/nhap",
+    links: [{ label: "Nhập kho", href: "/kho/nhap" }],
   },
   {
     key: "thu-may",
