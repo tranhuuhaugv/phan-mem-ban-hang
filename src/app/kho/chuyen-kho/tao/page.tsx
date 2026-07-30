@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Plus, Trash2, Package } from "lucide-react";
+import { Save, Plus, Trash2, Package, Search } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { Button, PageHeader, Field, Input, Select, Table, Tr, Td } from "@/components/ui";
 import { useToast } from "@/components/toast";
@@ -33,11 +33,13 @@ function Inner() {
   const [toBranchId, setToBranchId] = useState("");
   const [senderNote, setSenderNote] = useState("");
   const [items, setItems] = useState<Item[]>([]);
-  const [draftSerial, setDraftSerial] = useState("");
+  const [query, setQuery] = useState("");
+  const [qty, setQty] = useState("1");
   const [draftNote, setDraftNote] = useState("");
   const [busy, setBusy] = useState(false);
 
   const fromBranchName = branches?.find((b) => b.id === fromBranchId)?.name;
+  const nameOf = (m: Machine) => [m.brand, m.model].filter(Boolean).join(" ");
 
   // Máy tồn kho thuộc chi nhánh gửi, chưa được thêm
   const available = useMemo(() => {
@@ -47,18 +49,34 @@ function Inner() {
     );
   }, [machines, fromBranchId, items]);
 
-  const nameOf = (m: Machine) => [m.brand, m.model].filter(Boolean).join(" ");
-
-  const addItem = () => {
-    if (!draftSerial) {
-      toast("Chọn máy cần chuyển", "warning");
-      return;
+  // Gom theo tên sản phẩm để hiện số lượng tồn
+  const groups = useMemo(() => {
+    const map = new Map<string, Machine[]>();
+    for (const m of available) {
+      const n = nameOf(m);
+      if (!map.has(n)) map.set(n, []);
+      map.get(n)!.push(m);
     }
-    const m = (machines ?? []).find((x) => x.serial === draftSerial);
-    if (!m) return;
-    setItems((arr) => [...arr, { serial: m.serial, name: nameOf(m), note: draftNote.trim() }]);
-    setDraftSerial("");
+    return [...map.entries()].map(([name, ms]) => ({ name, machines: ms }));
+  }, [available]);
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return groups
+      .filter((g) => g.name.toLowerCase().includes(q) || g.machines.some((m) => m.serial.toLowerCase().includes(q)))
+      .slice(0, 8);
+  }, [groups, query]);
+
+  const addProduct = (group: { name: string; machines: Machine[] }) => {
+    const want = Math.max(1, Math.floor(Number(qty) || 1));
+    const n = Math.min(want, group.machines.length);
+    const picked = group.machines.slice(0, n);
+    setItems((arr) => [...arr, ...picked.map((m) => ({ serial: m.serial, name: group.name, note: draftNote.trim() }))]);
+    setQuery("");
+    setQty("1");
     setDraftNote("");
+    if (n < want) toast(`Chỉ còn ${n} máy "${group.name}" tồn kho, đã thêm ${n}`, "warning");
   };
   const removeItem = (serial: string) => setItems((arr) => arr.filter((i) => i.serial !== serial));
 
@@ -105,7 +123,7 @@ function Inner() {
               onChange={(e) => {
                 setFromBranchId(e.target.value);
                 setItems([]);
-                setDraftSerial("");
+                setQuery("");
               }}
             >
               <option value="">— Chọn chi nhánh gửi —</option>
@@ -140,24 +158,52 @@ function Inner() {
             {!fromBranchId ? (
               <p className="text-center text-sm text-[var(--muted)]">Chọn chi nhánh gửi để hiện máy tồn kho</p>
             ) : (
-              <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
-                <Field label={`Chọn máy (${available.length} máy tồn ở ${fromBranchName})`}>
-                  <Select value={draftSerial} onChange={(e) => setDraftSerial(e.target.value)}>
-                    <option value="">— Chọn máy —</option>
-                    {available.map((m) => (
-                      <option key={m.id} value={m.serial}>
-                        {m.serial} · {nameOf(m)}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="Ghi chú sản phẩm">
-                  <Input value={draftNote} onChange={(e) => setDraftNote(e.target.value)} placeholder="Tuỳ chọn" />
-                </Field>
-                <Button type="button" onClick={addItem} disabled={!draftSerial}>
-                  <Plus size={16} /> Thêm
-                </Button>
-              </div>
+              <>
+                <div className="grid gap-3 md:grid-cols-[1fr_7rem_1fr] md:items-end">
+                  <Field label={`Tìm sản phẩm (${available.length} máy tồn ở ${fromBranchName})`}>
+                    <div className="relative">
+                      <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+                      <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Gõ tên hoặc mã máy..." className="pl-8" />
+                    </div>
+                  </Field>
+                  <Field label="Số lượng">
+                    <Input type="number" min={1} value={qty} onChange={(e) => setQty(e.target.value)} />
+                  </Field>
+                  <Field label="Ghi chú sản phẩm">
+                    <Input value={draftNote} onChange={(e) => setDraftNote(e.target.value)} placeholder="Tuỳ chọn" />
+                  </Field>
+                </div>
+                {query.trim() && (
+                  <div className="mt-2 overflow-hidden rounded-lg border border-[var(--border)]">
+                    {results.length === 0 ? (
+                      <p className="px-3 py-3 text-center text-sm text-[var(--muted)]">Không tìm thấy máy tồn khớp “{query}”.</p>
+                    ) : (
+                      results.map((g) => {
+                        const addN = Math.min(Math.max(1, Math.floor(Number(qty) || 1)), g.machines.length);
+                        return (
+                          <button
+                            key={g.name}
+                            type="button"
+                            onClick={() => addProduct(g)}
+                            className="flex w-full items-center justify-between gap-3 border-b border-[var(--border)] px-3 py-2 text-left last:border-0 hover:bg-[var(--surface-2)]"
+                          >
+                            <span className="min-w-0">
+                              <span className="block truncate text-sm font-medium">{g.name}</span>
+                              <span className="block truncate text-xs text-[var(--muted)]">
+                                SL tồn: {g.machines.length} · Mã : {g.machines.map((m) => m.serial).slice(0, 3).join(", ")}
+                                {g.machines.length > 3 ? "…" : ""}
+                              </span>
+                            </span>
+                            <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-[var(--primary)]">
+                              <Plus size={14} /> Thêm {addN}
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
