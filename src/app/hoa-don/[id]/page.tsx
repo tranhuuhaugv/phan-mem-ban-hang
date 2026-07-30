@@ -140,25 +140,16 @@ function Inner({ id }: { id: string }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 py-4 text-sm">
-          <div>
-            <div className="text-[var(--muted)]">Khách hàng</div>
-            <div className="font-medium">{iv.customerName}</div>
-            {iv.phone && <div className="text-[var(--muted)]">{iv.phone}</div>}
-          </div>
-          <div className="text-right">
-            <div className="text-[var(--muted)]">Nguồn</div>
-            <div className="font-mono font-medium">
-              {iv.repairCode ? `Phiếu sửa ${iv.repairCode}` : iv.orderCode ? `Đơn ${iv.orderCode}` : "Bán trực tiếp"}
-            </div>
-          </div>
+        <div className="py-4 text-sm">
+          <div className="text-[var(--muted)]">Khách hàng</div>
+          <div className="font-medium">{iv.customerName}</div>
+          {iv.phone && <div className="text-[var(--muted)]">{iv.phone}</div>}
         </div>
 
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-y border-[var(--border)] text-left text-[var(--muted)]">
               <th className="py-2">Sản phẩm</th>
-              <th className="py-2">Mã SP</th>
               <th className="py-2 text-right">Thành tiền</th>
             </tr>
           </thead>
@@ -169,7 +160,6 @@ function Inner({ id }: { id: string }) {
                   <div className="font-medium">{it.name}</div>
                   {it.config && <div className="text-xs text-[var(--muted)]">{it.config}</div>}
                 </td>
-                <td className="py-3 font-mono text-xs">{it.serial || "—"}</td>
                 <td className="py-3 text-right font-medium">{formatVND(it.price)}</td>
               </tr>
             ))}
