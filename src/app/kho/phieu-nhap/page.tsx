@@ -8,7 +8,7 @@ import { Button, PageHeader, Table, Tr, Td, Badge, SearchInput } from "@/compone
 import { useRole } from "@/components/role-context";
 import { useApi } from "@/lib/api";
 import type { StockInListItem } from "@/lib/types";
-import { formatVND, formatDate } from "@/lib/format";
+import { formatVND, formatDateTime } from "@/lib/format";
 
 export default function Page() {
   return (
@@ -55,7 +55,7 @@ function Inner() {
                 <FileText size={13} /> {r.code}
               </Link>
             </Td>
-            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDate(r.date)}</Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDateTime(r.date)}</Td>
             <Td className="text-sm">{r.supplierName ?? <span className="text-[var(--muted)]">—</span>}</Td>
             <Td>{r.branchName ? <Badge tone="info">{r.branchName}</Badge> : <span className="text-xs text-[var(--muted)]">—</span>}</Td>
             <Td>

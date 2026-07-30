@@ -93,6 +93,8 @@ model Machine {
   stockInId String?
   stockIn   StockIn? @relation(fields: [stockInId], references: [id])
 
+  transferItems StockTransferItem[]
+
   orders       Order[]
   repairs      Repair[]
   warranties   Warranty[]
@@ -109,8 +111,10 @@ model Branch {
   note      String?
   createdAt DateTime @default(now())
 
-  machines Machine[]
-  stockIns StockIn[]
+  machines      Machine[]
+  stockIns      StockIn[]
+  transfersFrom StockTransfer[] @relation("TransferFrom")
+  transfersTo   StockTransfer[] @relation("TransferTo")
 }
 
 // Nhà cung cấp — nguồn nhập hàng vào kho
@@ -146,6 +150,38 @@ model StockIn {
   supplier   Supplier? @relation(fields: [supplierId], references: [id])
 
   machines Machine[]
+}
+
+// Phiếu chuyển kho — chuyển máy từ chi nhánh này sang chi nhánh khác
+model StockTransfer {
+  id             String    @id @default(cuid())
+  code           String    @unique // CK-0001
+  status         String    @default("dang_chuyen") // dang_chuyen | da_nhan | huy
+  senderNote     String? // ghi chú bên gửi
+  receiverNote   String? // ghi chú bên nhận
+  createdByName  String? // người tạo
+  receivedByName String? // người nhận
+  receivedAt     DateTime? // ngày nhận
+  createdAt      DateTime  @default(now())
+
+  fromBranchId String?
+  fromBranch   Branch? @relation("TransferFrom", fields: [fromBranchId], references: [id])
+  toBranchId   String?
+  toBranch     Branch? @relation("TransferTo", fields: [toBranchId], references: [id])
+
+  items StockTransferItem[]
+}
+
+// Dòng máy trong phiếu chuyển
+model StockTransferItem {
+  id   String  @id @default(cuid())
+  note String? // ghi chú cho sản phẩm chuyển
+
+  transferId String
+  transfer   StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+
+  machineId String
+  machine   Machine @relation(fields: [machineId], references: [id])
 }
 
 // Danh mục = loại sản phẩm (Laptop / Macbook / Phụ kiện...)

@@ -18,6 +18,7 @@ export const MENU_LABEL: Record<MenuKey, string> = {
   "tong-quan": "Tổng quan",
   kho: "Kho sản phẩm",
   "nhap-kho": "Nhập kho",
+  "chuyen-kho": "Chuyển kho",
   "danh-muc": "Danh mục sản phẩm",
   "thu-may": "Thu máy",
   "dat-hang": "Đặt hàng",
@@ -66,6 +67,17 @@ export const NAV: NavItem[] = [
     links: [
       { label: "Danh sách phiếu nhập", href: "/kho/phieu-nhap" },
       { label: "Tạo phiếu nhập", href: "/kho/nhap" },
+    ],
+  },
+  {
+    key: "chuyen-kho",
+    label: "Chuyển kho",
+    icon: "ArrowRightLeft",
+    color: "#7c3aed",
+    href: "/kho/chuyen-kho",
+    links: [
+      { label: "Danh sách phiếu chuyển", href: "/kho/chuyen-kho" },
+      { label: "Tạo phiếu chuyển", href: "/kho/chuyen-kho/tao" },
     ],
   },
   {

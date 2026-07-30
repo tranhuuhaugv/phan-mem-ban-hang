@@ -5,6 +5,7 @@ export type MenuKey =
   | "tong-quan"
   | "kho"
   | "nhap-kho"
+  | "chuyen-kho"
   | "danh-muc"
   | "thu-may"
   | "dat-hang"
@@ -45,6 +46,11 @@ export const PERMISSIONS: Record<MenuKey, Record<Role, Permission>> = {
     admin: FULL,
     manager: FULL,
     staff: { view: true, create: true, edit: false, remove: false }, // được nhập kho
+  },
+  "chuyen-kho": {
+    admin: FULL,
+    manager: FULL,
+    staff: { view: true, create: true, edit: true, remove: false }, // tạo phiếu + nhận hàng, không xoá
   },
   "danh-muc": {
     admin: FULL,

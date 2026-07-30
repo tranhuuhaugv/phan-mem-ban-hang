@@ -11,7 +11,7 @@ import { useRole } from "@/components/role-context";
 import { useToast } from "@/components/toast";
 import { useApi, apiPost } from "@/lib/api";
 import { PAY_METHOD_LABEL, type MachineStatus } from "@/lib/types";
-import { formatVND, formatDate } from "@/lib/format";
+import { formatVND, formatDateTime } from "@/lib/format";
 
 interface SupplierDetail {
   supplier: { id: string; name: string; phone?: string; address?: string; note?: string; debt: number };
@@ -119,7 +119,7 @@ function Inner({ id }: { id: string }) {
           <Table head={["Ngày", "Mã SP", "Tên sản phẩm", "Giá nhập", "Chi nhánh", "Trạng thái"]}>
             {imports.map((m) => (
               <Tr key={m.id}>
-                <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDate(m.date)}</Td>
+                <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDateTime(m.date)}</Td>
                 <Td>
                   <Link href={`/kho/${m.serial}`} className="font-mono text-xs font-medium text-[var(--primary)] hover:underline">
                     {m.serial}
@@ -168,7 +168,7 @@ function Inner({ id }: { id: string }) {
           <Table head={["Ngày", "Mã phiếu", "Nội dung", "Hình thức", "Số tiền"]}>
             {payments.map((p) => (
               <Tr key={p.id}>
-                <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDate(p.date)}</Td>
+                <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDateTime(p.date)}</Td>
                 <Td className="font-mono text-xs">{p.code}</Td>
                 <Td className="text-sm">{p.content}</Td>
                 <Td>

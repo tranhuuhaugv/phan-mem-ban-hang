@@ -248,6 +248,51 @@ export interface StockInDetail {
   items: StockInItem[];
 }
 
+// Phiếu chuyển kho
+export type TransferStatus = "dang_chuyen" | "da_nhan" | "huy";
+export const TRANSFER_STATUS_LABEL: Record<TransferStatus, string> = {
+  dang_chuyen: "Đang chuyển",
+  da_nhan: "Đã nhận",
+  huy: "Huỷ",
+};
+
+export interface StockTransferListItem {
+  id: string;
+  code: string;
+  date: string;
+  fromBranch?: string;
+  toBranch?: string;
+  status: TransferStatus;
+  qtySent: number;
+  qtyReceived: number;
+  createdByName?: string;
+  receivedByName?: string;
+  receivedAt?: string;
+  senderNote?: string;
+}
+
+export interface StockTransferItemView {
+  id: string;
+  serial: string;
+  name: string;
+  note?: string;
+}
+
+export interface StockTransferDetail {
+  id: string;
+  code: string;
+  date: string;
+  fromBranch?: string;
+  toBranch?: string;
+  status: TransferStatus;
+  senderNote?: string;
+  receiverNote?: string;
+  createdByName?: string;
+  receivedByName?: string;
+  receivedAt?: string;
+  items: StockTransferItemView[];
+}
+
 // Tài khoản nhân viên
 export type AccountStatus = "active" | "locked";
 export interface Account {

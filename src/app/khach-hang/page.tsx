@@ -8,7 +8,7 @@ import { Modal } from "@/components/modal";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
 import { useApi, apiPost } from "@/lib/api";
-import { formatVND, formatDate } from "@/lib/format";
+import { formatVND, formatDateTime } from "@/lib/format";
 import type { Customer, Order, BuyReceipt } from "@/lib/types";
 
 export default function Page() {
@@ -150,7 +150,7 @@ function Inner() {
                       <span className="font-mono text-xs">{o.code}</span> · {o.model}
                     </span>
                     <span className="flex items-center gap-2">
-                      {formatVND(o.sellPrice)} <Badge tone="muted">{formatDate(o.date)}</Badge>
+                      {formatVND(o.sellPrice)} <Badge tone="muted">{formatDateTime(o.date)}</Badge>
                     </span>
                   </div>
                 ))

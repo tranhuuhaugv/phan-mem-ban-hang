@@ -9,7 +9,7 @@ import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
 import { useApi, apiPost } from "@/lib/api";
 import { PAY_METHOD_LABEL } from "@/lib/types";
-import { formatVND, formatDate, formatDateTime } from "@/lib/format";
+import { formatVND, formatDateTime } from "@/lib/format";
 
 interface InvoiceDetail {
   id: string;
@@ -244,7 +244,7 @@ function Inner({ id }: { id: string }) {
               <div key={p.id} className="flex items-center justify-between py-2 text-sm">
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-xs text-[var(--muted)]">{p.code}</span>
-                  <span className="text-[var(--muted)]">{formatDate(p.date)}</span>
+                  <span className="text-[var(--muted)]">{formatDateTime(p.date)}</span>
                   {p.method && (
                     <span className="inline-flex items-center gap-1 text-xs text-[var(--muted)]">
                       {p.method === "chuyen_khoan" ? <CreditCard size={12} /> : <Wallet size={12} />}
