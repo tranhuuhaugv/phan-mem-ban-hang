@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Eye, CheckCircle2, ReceiptText } from "lucide-react";
+import { Plus, Eye, CheckCircle2, ReceiptText, Wallet, CreditCard } from "lucide-react";
 import { AccessGuard, DetailRow } from "@/components/parts";
 import { Button, PageHeader, Table, Tr, Td, Select, SearchInput, Input, Field, Textarea } from "@/components/ui";
 import { Modal } from "@/components/modal";
@@ -28,6 +28,8 @@ function Inner() {
   const [view, setView] = useState<Repair | null>(null);
   const [actualCost, setActualCost] = useState("");
   const [note, setNote] = useState("");
+  const [amountPaid, setAmountPaid] = useState("");
+  const [payMethod, setPayMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -42,18 +44,24 @@ function Inner() {
     setView(r);
     setActualCost(r.actualCost ? String(r.actualCost) : "");
     setNote(r.note ?? "");
+    setAmountPaid("");
+    setPayMethod("tien_mat");
   };
 
   const complete = async () => {
     if (!view) return;
     setBusy(true);
     try {
+      const cost = Number(actualCost) || view.estCost;
+      const paid = Math.min(cost, Math.max(0, Number(amountPaid) || 0));
       await apiPatch(`/api/repairs/${view.id}`, {
         status: "hoan_tat",
-        actualCost: Number(actualCost) || view.estCost,
+        actualCost: cost,
         note,
+        amountPaid: paid,
+        payMethod,
       });
-      toast(`${view.code} hoàn tất — máy trở về Tồn kho`);
+      toast(`${view.code} hoàn tất${paid > 0 ? ` — đã thu ${formatVND(paid)}` : ""} — máy trở về Tồn kho`);
       setView(null);
       reload();
     } catch (e) {
@@ -156,6 +164,7 @@ function Inner() {
             <DetailRow label={view.inStock ? "Mã SP (trong kho)" : "Nguồn máy"}>
               <span className="font-mono">{view.inStock ? view.serial : "Máy khách mang tới"}</span>
             </DetailRow>
+            <DetailRow label="Chi nhánh">{view.branchName ?? "—"}</DetailRow>
             <DetailRow label="Khách hàng">{view.customerName ?? "—"}</DetailRow>
             <DetailRow label="Số điện thoại">{view.customerPhone ?? "—"}</DetailRow>
             <DetailRow label="Mô tả lỗi">{view.errorDesc}</DetailRow>
@@ -175,9 +184,42 @@ function Inner() {
                 <Field label="Chi phí thực tế (₫)" hint="Bỏ trống = lấy chi phí dự kiến">
                   <Input type="number" value={actualCost} onChange={(e) => setActualCost(e.target.value)} placeholder={String(view.estCost)} />
                 </Field>
-                <Field label="Ghi chú (linh kiện đã thay, tình trạng...)">
+                <Field label="Mặt hàng / linh kiện đã thay">
                   <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: Đã thay bàn phím + vệ sinh máy" />
                 </Field>
+                <Field label="Số tiền khách trả (₫)" hint="Thu tiền khi trả máy (bỏ trống nếu chưa thu)">
+                  <div className="flex gap-2">
+                    <Input type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="0" className="flex-1" />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAmountPaid(String(Number(actualCost) || view.estCost))}
+                    >
+                      Trả đủ
+                    </Button>
+                  </div>
+                </Field>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { k: "tien_mat", label: "Tiền mặt", icon: Wallet },
+                    { k: "chuyen_khoan", label: "Chuyển khoản", icon: CreditCard },
+                  ] as const).map(({ k, label, icon: Icon }) => {
+                    const active = payMethod === k;
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => setPayMethod(k)}
+                        className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                          active ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--surface-2)]"
+                        }`}
+                      >
+                        <Icon size={16} /> {label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

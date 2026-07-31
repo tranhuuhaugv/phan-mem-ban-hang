@@ -141,6 +141,7 @@ export interface Repair {
   code: string; // Mã phiếu
   serial: string; // Mã SP nếu là máy trong kho
   inStock?: boolean; // máy trong kho hay máy khách mang tới
+  branchName?: string; // chi nhánh nhận sửa
   model: string; // Tên máy (kho: hãng+model, khách: tự nhập)
   customerName?: string; // Khách gửi sửa
   customerPhone?: string;

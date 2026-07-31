@@ -115,6 +115,7 @@ model Branch {
   stockIns      StockIn[]
   transfersFrom StockTransfer[] @relation("TransferFrom")
   transfersTo   StockTransfer[] @relation("TransferTo")
+  repairs       Repair[]
 }
 
 // Nhà cung cấp — nguồn nhập hàng vào kho
@@ -247,6 +248,9 @@ model Repair {
 
   machineId String?
   machine   Machine? @relation(fields: [machineId], references: [id])
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
 
   invoices Invoice[]
 }

@@ -4,7 +4,7 @@ import { handler, ok, serializeRepair, nextCode, upsertCustomer } from "@/lib/ap
 
 export const GET = handler(async () => {
   await requirePermission("sua-chua", "view");
-  const rows = await db.repair.findMany({ include: { machine: true }, orderBy: { receiveDate: "desc" } });
+  const rows = await db.repair.findMany({ include: { machine: true, branch: true }, orderBy: { receiveDate: "desc" } });
   return ok(rows.map(serializeRepair));
 });
 
@@ -32,6 +32,14 @@ export const POST = handler(async (req: Request) => {
   const code = await nextCode("repair", "SC-", 4);
   const customerName = b.customerName ? String(b.customerName).trim() : null;
   const customerPhone = b.customerPhone ? String(b.customerPhone).trim() : null;
+  const branchId = b.branchId ? String(b.branchId) : null;
+
+  // Khách lấy liền: hoàn tất + thu tiền ngay khi tạo phiếu
+  const completeNow = !!b.completeNow;
+  const actualCost = completeNow ? Number(b.actualCost) || 0 : null;
+  const partsNote = b.note ? String(b.note).trim() : null; // mặt hàng / linh kiện đã thay
+  const amountPaid = completeNow ? Math.max(0, Math.round(Number(b.amountPaid) || 0)) : 0;
+  const payMethod = b.payMethod === "chuyen_khoan" ? "chuyen_khoan" : "tien_mat";
 
   const row = await db.$transaction(async (tx) => {
     // Tự lưu khách vào danh bạ (nếu có SĐT)
@@ -45,14 +53,36 @@ export const POST = handler(async (req: Request) => {
         customerPhone,
         errorDesc: String(b.errorDesc).trim(),
         estCost: Number(b.estCost) || 0,
+        actualCost: completeNow ? actualCost : undefined,
+        note: partsNote,
         technician: b.technician ? String(b.technician).trim() : null,
         receiveDate: b.receiveDate ? new Date(b.receiveDate) : new Date(),
-        status: b.status === "cho_linh_kien" ? "cho_linh_kien" : "dang_sua",
+        returnDate: completeNow ? new Date() : undefined,
+        status: completeNow ? "hoan_tat" : b.status === "cho_linh_kien" ? "cho_linh_kien" : "dang_sua",
         machineId,
+        branchId,
       },
-      include: { machine: true },
+      include: { machine: true, branch: true },
     });
-    if (machineId) await tx.machine.update({ where: { id: machineId }, data: { status: "dang_sua" } });
+    if (machineId) {
+      // Lấy liền → máy trả về Tồn kho; còn lại → Đang sửa
+      await tx.machine.update({ where: { id: machineId }, data: { status: completeNow ? "ton_kho" : "dang_sua" } });
+    }
+    // Thu tiền ngay
+    if (completeNow && amountPaid > 0) {
+      const cashCode = await nextCode("cashFlow", "PT-", 4);
+      await tx.cashFlow.create({
+        data: {
+          code: cashCode,
+          type: "thu",
+          amount: amountPaid,
+          content: `Thu tiền sửa chữa - phiếu ${code}`,
+          category: "Sửa chữa",
+          partner: customerName,
+          method: payMethod,
+        },
+      });
+    }
     return repair;
   });
   return ok(serializeRepair(row), 201);

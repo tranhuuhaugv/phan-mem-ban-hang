@@ -206,12 +206,14 @@ export function serializeRepair(r: {
   note: string | null;
   status: string;
   machine?: { serial: string; brand: string; model: string } | null;
+  branch?: { name: string } | null;
 }) {
   return {
     id: r.id,
     code: r.code,
     serial: r.machine?.serial ?? "",
     inStock: !!r.machine,
+    branchName: r.branch?.name ?? undefined,
     // Tên máy: máy trong kho → hãng+model, máy khách → machineName
     model: r.machine ? `${r.machine.brand} ${r.machine.model}` : (r.machineName ?? ""),
     customerName: r.customerName ?? undefined,
