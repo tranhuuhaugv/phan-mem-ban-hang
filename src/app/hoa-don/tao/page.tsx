@@ -8,6 +8,7 @@ import { CustomerField } from "@/components/customer-field";
 import { Button, PageHeader, Field, Input, Select } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { useApi, apiPost } from "@/lib/api";
+import { QuickAddMachine } from "@/components/quick-add-machine";
 import type { Machine, Order, Repair, Invoice } from "@/lib/types";
 import { formatVND } from "@/lib/format";
 
@@ -31,13 +32,14 @@ export default function Page() {
 function Inner() {
   const router = useRouter();
   const toast = useToast();
-  const { data: machinesData } = useApi<Machine[]>("/api/machines");
+  const { data: machinesData, reload: reloadMachines } = useApi<Machine[]>("/api/machines");
   const { data: ordersData } = useApi<Order[]>("/api/orders");
   const { data: repairsData } = useApi<Repair[]>("/api/repairs");
 
   const [mode, setMode] = useState<Mode>("direct");
   const [items, setItems] = useState<LineItem[]>([]);
   const [query, setQuery] = useState("");
+  const [quickAdd, setQuickAdd] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [orderId, setOrderId] = useState("");
@@ -230,33 +232,37 @@ function Inner() {
 
                 {query.trim() && (
                   <div className="mt-2 overflow-hidden rounded-lg border border-[var(--border)]">
-                    {matches.length === 0 ? (
-                      <p className="px-3 py-3 text-center text-sm text-[var(--muted)]">
-                        Không tìm thấy máy tồn kho khớp “{query}”.
-                      </p>
-                    ) : (
-                      matches.map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => addMachine(m.serial)}
-                          className="flex w-full items-center justify-between gap-3 border-b border-[var(--border)] px-3 py-2 text-left last:border-0 hover:bg-[var(--surface-2)]"
-                        >
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-medium">
-                              {[m.brand, m.model].filter(Boolean).join(" ")}
-                            </span>
-                            <span className="block truncate text-xs text-[var(--muted)]">
-                              Mã : <span className="font-mono">{m.serial}</span>
-                              {"   "}SL: {inStock.filter((x) => x.brand === m.brand && x.model === m.model).length}
-                            </span>
-                          </span>
-                          <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-[var(--primary)]">
-                            <Plus size={14} /> Thêm
-                          </span>
-                        </button>
-                      ))
+                    {matches.length === 0 && (
+                      <p className="px-3 py-2 text-center text-xs text-[var(--muted)]">Không có máy tồn kho khớp “{query}”.</p>
                     )}
+                    {matches.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => addMachine(m.serial)}
+                        className="flex w-full items-center justify-between gap-3 border-b border-[var(--border)] px-3 py-2 text-left hover:bg-[var(--surface-2)]"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium">
+                            {[m.brand, m.model].filter(Boolean).join(" ")}
+                          </span>
+                          <span className="block truncate text-xs text-[var(--muted)]">
+                            Mã : <span className="font-mono">{m.serial}</span>
+                            {"   "}SL: {inStock.filter((x) => x.brand === m.brand && x.model === m.model).length}
+                          </span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-[var(--primary)]">
+                          <Plus size={14} /> Thêm
+                        </span>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setQuickAdd(true)}
+                      className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-[var(--primary)] hover:bg-[var(--surface-2)]"
+                    >
+                      <Plus size={15} /> Nhập kho “{query.trim()}” (thêm vào kho rồi bán)
+                    </button>
                   </div>
                 )}
 
@@ -390,6 +396,25 @@ function Inner() {
           </Button>
         </div>
       </form>
+
+      <QuickAddMachine
+        open={quickAdd}
+        onClose={() => setQuickAdd(false)}
+        defaultName={query.trim()}
+        onCreated={(m) => {
+          reloadMachines();
+          setItems((s) => [
+            ...s,
+            {
+              serial: m.serial,
+              name: [m.brand, m.model].filter(Boolean).join(" "),
+              config: [m.cpu, m.ram, m.storage].filter(Boolean).join(" · "),
+              price: m.salePrice ?? 0,
+            },
+          ]);
+          setQuery("");
+        }}
+      />
     </div>
   );
 }

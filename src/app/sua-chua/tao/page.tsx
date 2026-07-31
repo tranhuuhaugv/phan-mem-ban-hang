@@ -8,6 +8,7 @@ import { CustomerField } from "@/components/customer-field";
 import { Button, PageHeader, Field, Input, Textarea, Select } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { useApi, apiPost } from "@/lib/api";
+import { QuickAddMachine } from "@/components/quick-add-machine";
 import { formatVND } from "@/lib/format";
 import type { Machine, Branch, Repair } from "@/lib/types";
 
@@ -22,7 +23,7 @@ export default function Page() {
 function Inner() {
   const router = useRouter();
   const toast = useToast();
-  const { data } = useApi<Machine[]>("/api/machines");
+  const { data, reload: reloadMachines } = useApi<Machine[]>("/api/machines");
   const { data: branches } = useApi<Branch[]>("/api/branches");
   const inStock = (data ?? []).filter((m) => m.status === "ton_kho" || m.status === "bao_hanh");
 
@@ -35,6 +36,7 @@ function Inner() {
   const [query, setQuery] = useState("");
   const [model, setModel] = useState("");
   const [errorDesc, setErrorDesc] = useState("");
+  const [quickAdd, setQuickAdd] = useState(false);
 
   // Khách lấy liền → thanh toán ngay
   const [payNow, setPayNow] = useState(false);
@@ -182,9 +184,16 @@ function Inner() {
                       <button
                         type="button"
                         onClick={useCustomer}
-                        className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-[var(--primary)] hover:bg-[var(--surface-2)]"
+                        className="flex w-full items-center gap-1.5 border-b border-[var(--border)] px-3 py-2 text-left text-sm font-medium text-[var(--primary)] hover:bg-[var(--surface-2)]"
                       >
                         <Plus size={15} /> Máy khách / ngoài kho{query.trim() ? ` “${query.trim()}”` : ""}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQuickAdd(true)}
+                        className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-[var(--primary)] hover:bg-[var(--surface-2)]"
+                      >
+                        <Plus size={15} /> Nhập kho “{query.trim()}” (thêm vào kho)
                       </button>
                     </div>
                   )}
@@ -286,6 +295,18 @@ function Inner() {
           </Button>
         </div>
       </form>
+
+      <QuickAddMachine
+        open={quickAdd}
+        onClose={() => setQuickAdd(false)}
+        defaultName={query.trim()}
+        onCreated={(m) => {
+          reloadMachines();
+          setSerial(m.serial);
+          setIsCustomer(false);
+          setModel(nameOf(m));
+        }}
+      />
     </div>
   );
 }
