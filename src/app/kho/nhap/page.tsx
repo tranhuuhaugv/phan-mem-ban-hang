@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Plus, RefreshCw, Wallet, CreditCard, Trash2, Pencil, Package } from "lucide-react";
+import { Save, Plus, RefreshCw, Wallet, CreditCard, Trash2, Pencil, Package, History } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { Button, PageHeader, Field, Input, Select, Table, Tr, Td } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { useToast } from "@/components/toast";
 import { useApi, apiPost } from "@/lib/api";
-import type { Category, Branch, Supplier } from "@/lib/types";
+import type { Category, Branch, Supplier, Machine } from "@/lib/types";
 import { formatVND } from "@/lib/format";
 
 interface Line {
@@ -48,6 +48,17 @@ function Inner() {
   const { data: categories } = useApi<Category[]>("/api/categories");
   const { data: branches } = useApi<Branch[]>("/api/branches");
   const { data: suppliers, reload: reloadSuppliers } = useApi<Supplier[]>("/api/suppliers");
+  const { data: machines } = useApi<Machine[]>("/api/machines");
+
+  // Sản phẩm đã từng nhập (gộp theo tên) — để chọn lại cho nhanh
+  const products = useMemo(() => {
+    const map = new Map<string, { name: string; category: string; salePrice: string }>();
+    for (const m of machines ?? []) {
+      if (!m.model || map.has(m.model)) continue;
+      map.set(m.model, { name: m.model, category: m.category ?? "", salePrice: m.salePrice != null ? String(m.salePrice) : "" });
+    }
+    return [...map.values()];
+  }, [machines]);
 
   // Phiếu
   const [date, setDate] = useState(todayISO());
@@ -59,6 +70,15 @@ function Inner() {
   const [draft, setDraft] = useState<Line>(EMPTY_LINE);
   const [openProduct, setOpenProduct] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
+
+  // Gợi ý sản phẩm cũ theo tên đang gõ
+  const nameSuggestions = useMemo(() => {
+    const q = draft.name.trim().toLowerCase();
+    if (!q) return [];
+    return products.filter((p) => p.name.toLowerCase().includes(q) && p.name.toLowerCase() !== q).slice(0, 6);
+  }, [products, draft.name]);
+  const pickProduct = (p: { name: string; category: string; salePrice: string }) =>
+    setDraft((s) => ({ ...s, name: p.name, category: p.category || s.category, salePrice: p.salePrice || s.salePrice }));
   // Thanh toán
   const [amountPaid, setAmountPaid] = useState("");
   const [payMethod, setPayMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
@@ -355,8 +375,30 @@ function Inner() {
               ))}
             </Select>
           </Field>
-          <Field label="Tên sản phẩm *">
-            <Input value={draft.name} onChange={setD("name")} placeholder="VD: MacBook Pro 14 M1" autoFocus />
+          <Field label="Tên sản phẩm *" hint="Gõ để chọn lại sản phẩm cũ, hoặc nhập tên mới">
+            <div className="relative">
+              <Input value={draft.name} onChange={setD("name")} placeholder="VD: MacBook Pro 14 M1" autoFocus />
+              {nameSuggestions.length > 0 && (
+                <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-lg-soft">
+                  <div className="flex items-center gap-1.5 border-b border-[var(--border)] px-3 py-1.5 text-[10px] uppercase tracking-wide text-[var(--muted)]">
+                    <History size={11} /> Sản phẩm đã nhập
+                  </div>
+                  {nameSuggestions.map((p) => (
+                    <button
+                      key={p.name}
+                      type="button"
+                      onClick={() => pickProduct(p)}
+                      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-[var(--surface-2)]"
+                    >
+                      <span className="truncate font-medium">{p.name}</span>
+                      <span className="shrink-0 text-xs text-[var(--muted)]">
+                        {[p.category, p.salePrice ? formatVND(Number(p.salePrice)) : ""].filter(Boolean).join(" · ")}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Serial" hint="Bỏ trống = tự sinh mã SP">

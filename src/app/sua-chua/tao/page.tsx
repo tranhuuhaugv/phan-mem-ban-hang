@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Boxes, UserRound } from "lucide-react";
-import { AccessGuard, BackLink, SectionCard, DetailRow } from "@/components/parts";
+import { Save, Search, Plus } from "lucide-react";
+import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { CustomerField } from "@/components/customer-field";
 import { Button, PageHeader, Field, Input, Textarea, Select } from "@/components/ui";
 import { useToast } from "@/components/toast";
@@ -25,8 +25,9 @@ function Inner() {
   const { data } = useApi<Machine[]>("/api/machines");
   const inStock = (data ?? []).filter((m) => m.status === "ton_kho" || m.status === "bao_hanh");
 
-  const [source, setSource] = useState<"kho" | "khach">("khach");
   const [serial, setSerial] = useState("");
+  const [khachMode, setKhachMode] = useState(false);
+  const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [f, setF] = useState({
     machineName: "",
@@ -42,18 +43,24 @@ function Inner() {
     setF((s) => ({ ...s, [k]: e.target.value }));
 
   const picked = inStock.find((m) => m.serial === serial);
+  const nameOf = (m: Machine) => [m.brand, m.model].filter(Boolean).join(" ");
+  const matches = (
+    query.trim()
+      ? inStock.filter((m) => `${m.serial} ${m.brand} ${m.model}`.toLowerCase().includes(query.trim().toLowerCase()))
+      : inStock
+  ).slice(0, 6);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const isKho = !!serial;
     if (!f.errorDesc.trim()) return toast("Nhập mô tả lỗi", "warning");
-    if (source === "kho" && !serial) return toast("Chọn máy trong kho", "warning");
-    if (source === "khach" && !f.machineName.trim()) return toast("Nhập tên máy khách mang tới", "warning");
+    if (!isKho && !f.machineName.trim()) return toast("Chọn máy trong kho hoặc nhập tên máy khách", "warning");
 
     setBusy(true);
     try {
       const row = await apiPost<Repair>("/api/repairs", {
-        serial: source === "kho" ? serial : "",
-        machineName: source === "khach" ? f.machineName : "",
+        serial: isKho ? serial : "",
+        machineName: isKho ? "" : f.machineName,
         customerName: f.customerName,
         customerPhone: f.customerPhone,
         errorDesc: f.errorDesc,
@@ -62,7 +69,7 @@ function Inner() {
         receiveDate: f.receiveDate,
         status: f.status,
       });
-      toast(`Đã tạo phiếu ${row.code}${source === "kho" ? ` — máy ${serial} chuyển Đang sửa` : ""}`);
+      toast(`Đã tạo phiếu ${row.code}${isKho ? ` — máy ${serial} chuyển Đang sửa` : ""}`);
       router.push("/sua-chua");
     } catch (err) {
       toast(err instanceof Error ? err.message : "Tạo phiếu thất bại", "warning");
@@ -71,33 +78,44 @@ function Inner() {
     }
   };
 
-  const tab = (active: boolean) =>
-    `flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors ${
-      active ? "bg-[var(--primary)] text-white shadow-sm" : "text-[var(--muted)] hover:text-[var(--foreground)]"
-    }`;
-
   return (
     <div>
       <BackLink href="/sua-chua">Về danh sách phiếu</BackLink>
       <PageHeader title="Tạo phiếu sửa chữa" subtitle="Ghi nhận máy nhận sửa: máy gì, lỗi gì, khách nào, KTV nào nhận" />
 
       <form onSubmit={submit} className="space-y-3">
-        <div className="inline-flex rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5">
-          <button type="button" onClick={() => setSource("khach")} className={tab(source === "khach")}>
-            <UserRound size={15} /> Máy khách mang tới
-          </button>
-          <button type="button" onClick={() => setSource("kho")} className={tab(source === "kho")}>
-            <Boxes size={15} /> Máy trong kho
-          </button>
-        </div>
-
         <div className="grid items-start gap-3 lg:grid-cols-3">
           {/* Cột 1: Máy nhận sửa */}
           <SectionCard title="Máy nhận sửa">
-            {source === "khach" ? (
+            {serial && picked ? (
+              // Đã chọn máy trong kho
               <div className="space-y-3">
+                <div className="flex items-start justify-between gap-2 rounded-lg bg-[var(--surface-2)] p-3">
+                  <div className="min-w-0">
+                    <div className="font-medium">{nameOf(picked)}</div>
+                    <div className="font-mono text-xs text-[var(--muted)]">{picked.serial}</div>
+                    <div className="text-xs text-[var(--muted)]">
+                      {picked.cpu} · {picked.ram} · {picked.storage}
+                    </div>
+                  </div>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => { setSerial(""); setQuery(""); }}>
+                    Đổi máy
+                  </Button>
+                </div>
+                <p className="text-xs text-[var(--muted)]">Máy sẽ tự chuyển trạng thái “Đang sửa” khi tạo phiếu.</p>
+              </div>
+            ) : khachMode ? (
+              // Máy khách mang tới (không có trong kho)
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setKhachMode(false)}
+                  className="text-xs text-[var(--primary)] hover:underline"
+                >
+                  ← Tìm máy trong kho
+                </button>
                 <Field label="Tên máy *" hint="Máy của khách, không có trong kho">
-                  <Input value={f.machineName} onChange={set("machineName")} placeholder="VD: Dell XPS 13 9310" />
+                  <Input value={f.machineName} onChange={set("machineName")} placeholder="VD: Dell XPS 13 9310" autoFocus />
                 </Field>
                 <CustomerField
                   name={f.customerName}
@@ -107,28 +125,42 @@ function Inner() {
                 />
               </div>
             ) : (
-              <div className="space-y-3">
-                <Field label="Chọn máy trong kho (Mã SP) *">
-                  <Select value={serial} onChange={(e) => setSerial(e.target.value)}>
-                    <option value="">— Chọn máy —</option>
-                    {inStock.map((m) => (
-                      <option key={m.id} value={m.serial}>
-                        {m.serial} · {m.brand} {m.model}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                {picked && (
-                  <div className="rounded-lg bg-[var(--surface-2)] p-3">
-                    <DetailRow label="Máy">
-                      {picked.brand} {picked.model}
-                    </DetailRow>
-                    <DetailRow label="Cấu hình">
-                      {picked.cpu} · {picked.ram} · {picked.storage}
-                    </DetailRow>
+              // Ô tìm sản phẩm để sửa
+              <div className="space-y-2">
+                <Field label="Tìm sản phẩm cần sửa *" hint="Chọn máy trong kho, hoặc bấm + để nhập máy khách">
+                  <div className="relative">
+                    <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+                    <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="VD: SP0001, MacBook..." className="pl-8" />
                   </div>
-                )}
-                <p className="text-xs text-[var(--muted)]">Máy sẽ tự chuyển trạng thái “Đang sửa” khi tạo phiếu.</p>
+                </Field>
+                <div className="overflow-hidden rounded-lg border border-[var(--border)]">
+                  {matches.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setSerial(m.serial)}
+                      className="flex w-full items-center justify-between gap-2 border-b border-[var(--border)] px-3 py-2 text-left hover:bg-[var(--surface-2)]"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium">{nameOf(m)}</span>
+                        <span className="block font-mono text-xs text-[var(--muted)]">{m.serial}</span>
+                      </span>
+                    </button>
+                  ))}
+                  {matches.length === 0 && (
+                    <p className="px-3 py-2 text-center text-xs text-[var(--muted)]">Không có máy khớp trong kho</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setKhachMode(true);
+                      setF((s) => ({ ...s, machineName: query.trim() }));
+                    }}
+                    className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-[var(--primary)] hover:bg-[var(--surface-2)]"
+                  >
+                    <Plus size={15} /> Máy khách mang tới{query.trim() ? ` “${query.trim()}”` : " (không có trong kho)"}
+                  </button>
+                </div>
               </div>
             )}
           </SectionCard>
