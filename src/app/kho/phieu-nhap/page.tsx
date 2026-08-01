@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Plus, FileText } from "lucide-react";
 import { AccessGuard } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, Badge, SearchInput, Select } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, FootTd, Badge, SearchInput, FilterBar, FilterSelect, DateRange, ClearFilterButton, inDateRange } from "@/components/ui";
 import { useRole } from "@/components/role-context";
 import { useApi } from "@/lib/api";
 import type { StockInListItem } from "@/lib/types";
@@ -27,6 +27,8 @@ function Inner() {
   const [supplier, setSupplier] = useState("all");
   const [branch, setBranch] = useState("all");
   const [payFilter, setPayFilter] = useState<"all" | "debt" | "paid">("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   const suppliers = Array.from(new Set(receipts.map((r) => r.supplierName).filter(Boolean) as string[])).sort();
   const branches = Array.from(new Set(receipts.map((r) => r.branchName).filter(Boolean) as string[])).sort();
@@ -35,7 +37,12 @@ function Inner() {
     .filter((r) => `${r.code} ${r.supplierName ?? ""} ${r.branchName ?? ""}`.toLowerCase().includes(q.trim().toLowerCase()))
     .filter((r) => supplier === "all" || r.supplierName === supplier)
     .filter((r) => branch === "all" || r.branchName === branch)
-    .filter((r) => payFilter === "all" || (payFilter === "debt" ? r.debt > 0 : r.debt <= 0));
+    .filter((r) => payFilter === "all" || (payFilter === "debt" ? r.debt > 0 : r.debt <= 0))
+    .filter((r) => inDateRange(r.date, fromDate, toDate));
+  const sumMachines = rows.reduce((s, r) => s + r.machineCount, 0);
+  const sumTotal = rows.reduce((s, r) => s + r.total, 0);
+  const sumPaid = rows.reduce((s, r) => s + r.paid, 0);
+  const sumDebt = rows.reduce((s, r) => s + r.debt, 0);
 
   return (
     <div>
@@ -51,32 +58,58 @@ function Inner() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, NCC, chi nhánh..." className="max-w-xs" />
-        <Select value={supplier} onChange={(e) => setSupplier(e.target.value)} className="w-48">
+      <FilterBar search={<SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, NCC, chi nhánh..." className="max-w-xs" />}>
+        <DateRange from={fromDate} to={toDate} onFrom={setFromDate} onTo={setToDate} />
+        <FilterSelect value={supplier} onChange={(e) => setSupplier(e.target.value)}>
           <option value="all">Tất cả NCC</option>
           {suppliers.map((s) => (
             <option key={s} value={s}>
               {s}
             </option>
           ))}
-        </Select>
-        <Select value={branch} onChange={(e) => setBranch(e.target.value)} className="w-44">
+        </FilterSelect>
+        <FilterSelect value={branch} onChange={(e) => setBranch(e.target.value)}>
           <option value="all">Tất cả chi nhánh</option>
           {branches.map((b) => (
             <option key={b} value={b}>
               {b}
             </option>
           ))}
-        </Select>
-        <Select value={payFilter} onChange={(e) => setPayFilter(e.target.value as typeof payFilter)} className="w-36">
+        </FilterSelect>
+        <FilterSelect value={payFilter} onChange={(e) => setPayFilter(e.target.value as typeof payFilter)}>
           <option value="all">Tất cả TT</option>
           <option value="debt">Còn nợ</option>
           <option value="paid">Đã đủ</option>
-        </Select>
-      </div>
+        </FilterSelect>
+        <ClearFilterButton
+          show={!!(fromDate || toDate || supplier !== "all" || branch !== "all" || payFilter !== "all")}
+          onClick={() => {
+            setFromDate("");
+            setToDate("");
+            setSupplier("all");
+            setBranch("all");
+            setPayFilter("all");
+          }}
+        />
+      </FilterBar>
 
-      <Table head={["Mã phiếu", "Ngày", "Nhà cung cấp", "Chi nhánh", "Số máy", "Tổng tiền", "Đã trả", "Còn nợ"]}>
+      <Table
+        head={["Mã phiếu", "Ngày", "Nhà cung cấp", "Chi nhánh", "Số máy", "Tổng tiền", "Đã trả", "Còn nợ"]}
+        foot={
+          rows.length > 0 ? (
+            <tr>
+              <FootTd className="text-xs uppercase tracking-wide text-[var(--muted)]">Tổng {rows.length} phiếu</FootTd>
+              <FootTd />
+              <FootTd />
+              <FootTd />
+              <FootTd className="whitespace-nowrap">{sumMachines} máy</FootTd>
+              <FootTd className="whitespace-nowrap">{formatVND(sumTotal)}</FootTd>
+              <FootTd className="whitespace-nowrap text-[var(--success)]">{formatVND(sumPaid)}</FootTd>
+              <FootTd className="whitespace-nowrap text-[var(--danger)]">{sumDebt > 0 ? formatVND(sumDebt) : "—"}</FootTd>
+            </tr>
+          ) : undefined
+        }
+      >
         {rows.map((r) => (
           <Tr key={r.id}>
             <Td>

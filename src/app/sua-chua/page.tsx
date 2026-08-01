@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, Eye, CheckCircle2, ReceiptText, Wallet, CreditCard, Trash2 } from "lucide-react";
 import { AccessGuard, DetailRow } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, Select, SearchInput, Input, Field, Textarea } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, FootTd, SearchInput, Input, Field, Textarea, FilterBar, FilterSelect, DateRange, ClearFilterButton, inDateRange } from "@/components/ui";
 import { Modal, ConfirmDialog } from "@/components/modal";
 import { RepairStatusBadge } from "@/components/status";
 import { useToast } from "@/components/toast";
@@ -33,16 +33,20 @@ function Inner() {
   const [payMethod, setPayMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
   const [del, setDel] = useState<Repair | null>(null);
   const [q, setQ] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [busy, setBusy] = useState(false);
 
   const branches = Array.from(new Set((data ?? []).map((r) => r.branchName).filter(Boolean) as string[])).sort();
   const rows = (data ?? []).filter((r) => {
     if (status !== "all" && r.status !== status) return false;
     if (branch !== "all" && r.branchName !== branch) return false;
+    if (!inDateRange(r.receiveDate, fromDate, toDate)) return false;
     return `${r.code} ${r.serial} ${r.model} ${r.customerName ?? ""} ${r.errorDesc} ${r.technician ?? ""}`
       .toLowerCase()
       .includes(q.trim().toLowerCase());
   });
+  const sumEst = rows.reduce((s, r) => s + r.estCost, 0);
 
   const openView = (r: Repair) => {
     setView(r);
@@ -89,29 +93,55 @@ function Inner() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, tên máy, khách, lỗi, KTV..." className="max-w-xs" />
-        <Select value={status} onChange={(e) => setStatus(e.target.value as RepairStatus | "all")} className="w-48">
+      <FilterBar search={<SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, tên máy, khách, lỗi, KTV..." className="max-w-xs" />}>
+        <DateRange from={fromDate} to={toDate} onFrom={setFromDate} onTo={setToDate} />
+        <FilterSelect value={status} onChange={(e) => setStatus(e.target.value as RepairStatus | "all")}>
           <option value="all">Tất cả trạng thái</option>
           {Object.entries(REPAIR_STATUS_LABEL).map(([k, v]) => (
             <option key={k} value={k}>
               {v}
             </option>
           ))}
-        </Select>
+        </FilterSelect>
         {branches.length > 0 && (
-          <Select value={branch} onChange={(e) => setBranch(e.target.value)} className="w-44">
+          <FilterSelect value={branch} onChange={(e) => setBranch(e.target.value)}>
             <option value="all">Tất cả chi nhánh</option>
             {branches.map((b) => (
               <option key={b} value={b}>
                 {b}
               </option>
             ))}
-          </Select>
+          </FilterSelect>
         )}
-      </div>
+        <ClearFilterButton
+          show={!!(fromDate || toDate || status !== "all" || branch !== "all")}
+          onClick={() => {
+            setFromDate("");
+            setToDate("");
+            setStatus("all");
+            setBranch("all");
+          }}
+        />
+      </FilterBar>
 
-      <Table head={["Mã phiếu", "Máy", "Khách hàng", "Lỗi", "KTV nhận", "CP dự kiến", "Ngày nhận", "Trạng thái", ""]}>
+      <Table
+        head={["Mã phiếu", "Máy", "Khách hàng", "Lỗi", "KTV nhận", "CP dự kiến", "Ngày nhận", "Trạng thái", ""]}
+        foot={
+          rows.length > 0 ? (
+            <tr>
+              <FootTd className="text-xs uppercase tracking-wide text-[var(--muted)]">Tổng {rows.length} phiếu</FootTd>
+              <FootTd />
+              <FootTd />
+              <FootTd />
+              <FootTd />
+              <FootTd className="whitespace-nowrap">{formatVND(sumEst)}</FootTd>
+              <FootTd />
+              <FootTd />
+              <FootTd />
+            </tr>
+          ) : undefined
+        }
+      >
         {rows.map((r) => (
           <Tr key={r.id}>
             <Td className="font-mono text-xs font-medium">{r.code}</Td>

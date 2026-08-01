@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, ArrowDownCircle, Pencil, Trash2 } from "lucide-react";
 import { AccessGuard } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, Card, Field, Input, Select, SearchInput } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, FootTd, Card, Field, Input, Select, SearchInput, FilterBar, FilterSelect, DateRange, ClearFilterButton, inDateRange } from "@/components/ui";
 import { Modal, ConfirmDialog } from "@/components/modal";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
@@ -47,8 +47,7 @@ function Inner() {
   const rows = rowsAll
     .filter((c) => `${c.code} ${c.content} ${c.category} ${c.partner ?? ""}`.toLowerCase().includes(q.trim().toLowerCase()))
     .filter((c) => catF === "all" || c.category === catF)
-    .filter((c) => !from || c.date.slice(0, 10) >= from)
-    .filter((c) => !to || c.date.slice(0, 10) <= to)
+    .filter((c) => inDateRange(c.date, from, to))
     .sort((a, b) => b.date.localeCompare(a.date));
   const total = rows.reduce((s, c) => s + c.amount, 0);
 
@@ -102,21 +101,42 @@ function Inner() {
         <p className="mt-1 text-2xl font-bold text-[var(--danger)]">{formatVND(total)}</p>
       </Card>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, nội dung, đối tác..." className="max-w-xs" />
-        <Select value={catF} onChange={(e) => setCatF(e.target.value)} className="w-40">
+      <FilterBar search={<SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, nội dung, đối tác..." className="max-w-xs" />}>
+        <DateRange from={from} to={to} onFrom={setFrom} onTo={setTo} />
+        <FilterSelect value={catF} onChange={(e) => setCatF(e.target.value)}>
           <option value="all">Tất cả loại</option>
           {cats.map((c) => (
             <option key={c} value={c}>
               {c}
             </option>
           ))}
-        </Select>
-        <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" title="Từ ngày" />
-        <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" title="Đến ngày" />
-      </div>
+        </FilterSelect>
+        <ClearFilterButton
+          show={!!(from || to || catF !== "all")}
+          onClick={() => {
+            setFrom("");
+            setTo("");
+            setCatF("all");
+          }}
+        />
+      </FilterBar>
 
-      <Table head={["Mã phiếu", "Ngày", "Nội dung", "Loại chi phí", "Người nhận", "Số tiền", ""]}>
+      <Table
+        head={["Mã phiếu", "Ngày", "Nội dung", "Loại chi phí", "Người nhận", "Số tiền", ""]}
+        foot={
+          rows.length > 0 ? (
+            <tr>
+              <FootTd className="text-xs uppercase tracking-wide text-[var(--muted)]">Tổng {rows.length} phiếu</FootTd>
+              <FootTd />
+              <FootTd />
+              <FootTd />
+              <FootTd />
+              <FootTd className="whitespace-nowrap text-[var(--danger)]">−{formatVND(total)}</FootTd>
+              <FootTd />
+            </tr>
+          ) : undefined
+        }
+      >
         {rows.map((c) => (
           <Tr key={c.id}>
             <Td className="font-mono text-xs font-medium">{c.code}</Td>

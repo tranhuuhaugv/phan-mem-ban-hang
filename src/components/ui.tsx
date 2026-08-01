@@ -147,7 +147,7 @@ export function PageHeader({
   );
 }
 
-export function Table({ head, children }: { head: string[]; children: ReactNode }) {
+export function Table({ head, children, foot }: { head: string[]; children: ReactNode; foot?: ReactNode }) {
   return (
     <div className="card overflow-hidden">
       <div className="overflow-x-auto">
@@ -162,10 +162,20 @@ export function Table({ head, children }: { head: string[]; children: ReactNode 
             </tr>
           </thead>
           <tbody>{children}</tbody>
+          {foot && (
+            <tfoot className="border-t-2 border-[var(--border)] bg-[color-mix(in_srgb,var(--primary)_6%,var(--surface-2))] font-semibold">
+              {foot}
+            </tfoot>
+          )}
         </table>
       </div>
     </div>
   );
+}
+
+// Ô tổng ở chân bảng (tfoot) — canh phải, in đậm cho cột tiền
+export function FootTd({ children, className = "" }: { children?: ReactNode; className?: string }) {
+  return <td className={`px-4 py-3 align-middle ${className}`}>{children}</td>;
 }
 
 export function Tr({ children }: { children: ReactNode }) {
@@ -227,6 +237,83 @@ export function SearchInput({
 
 export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return <select {...props} className={`${inputCls} ${props.className ?? ""}`} />;
+}
+
+// ---- Compact filter bar (danh sách) ----
+const filterCtrlCls =
+  "h-8 max-w-[10rem] rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 text-xs outline-none focus:border-[var(--primary)]";
+
+export function FilterBar({ search, children }: { search?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      {search ?? <span />}
+      <div className="flex flex-wrap items-center gap-1.5">{children}</div>
+    </div>
+  );
+}
+
+export function FilterSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select {...props} className={`${filterCtrlCls} ${props.className ?? ""}`} />;
+}
+
+export function DateRange({
+  from,
+  to,
+  onFrom,
+  onTo,
+}: {
+  from: string;
+  to: string;
+  onFrom: (v: string) => void;
+  onTo: (v: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2">
+      <input
+        type="date"
+        value={from}
+        onChange={(e) => onFrom(e.target.value)}
+        className="h-8 bg-transparent text-xs outline-none"
+        aria-label="Từ ngày"
+      />
+      <span className="text-xs text-[var(--muted)]">–</span>
+      <input
+        type="date"
+        value={to}
+        onChange={(e) => onTo(e.target.value)}
+        className="h-8 bg-transparent text-xs outline-none"
+        aria-label="Đến ngày"
+      />
+    </div>
+  );
+}
+
+export function ClearFilterButton({ show, onClick }: { show: boolean; onClick: () => void }) {
+  if (!show) return null;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="h-8 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 text-xs text-[var(--muted)] hover:text-[var(--fg)]"
+    >
+      Xóa lọc
+    </button>
+  );
+}
+
+// Chuyển ISO datetime -> YYYY-MM-DD theo giờ địa phương (để so với input[type=date])
+export function localYmd(iso: string) {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+export function inDateRange(iso: string, from: string, to: string) {
+  if (!from && !to) return true;
+  const d = localYmd(iso);
+  if (from && d < from) return false;
+  if (to && d > to) return false;
+  return true;
 }
 
 export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
