@@ -9,7 +9,7 @@ import { MachineStatusBadge } from "@/components/status";
 import { useRole } from "@/components/role-context";
 import { useToast } from "@/components/toast";
 import { useApi, apiDelete } from "@/lib/api";
-import { CONDITION_LABEL, MACHINE_STATUS_LABEL, type Machine, type MachineStatus } from "@/lib/types";
+import { MACHINE_STATUS_LABEL, type Machine, type MachineStatus } from "@/lib/types";
 import { formatVND, formatDateTime } from "@/lib/format";
 
 export default function KhoPage() {
@@ -117,7 +117,7 @@ export default function KhoPage() {
         </Select>
       </div>
 
-      <Table head={["Mã SP", "Tên sản phẩm", "Danh mục", "Chi nhánh", "Cấu hình", "Loại", "Giá nhập", "Ngày nhập", "Trạng thái", ""]}>
+      <Table head={["Mã SP", "Tên sản phẩm", "Danh mục", "Chi nhánh", "Cấu hình", "Giá nhập", "Ngày nhập", "Trạng thái", ""]}>
         {rows.map((m) => (
           <Tr key={m.id}>
             <Td>
@@ -145,9 +145,6 @@ export default function KhoPage() {
                 {m.cpu} · {m.ram} · {m.storage}
               </div>
               <div className="text-xs text-[var(--muted)]">{m.screen}</div>
-            </Td>
-            <Td>
-              <Badge tone="muted">{CONDITION_LABEL[m.condition]}</Badge>
             </Td>
             <Td className="whitespace-nowrap font-medium">{formatVND(m.purchasePrice)}</Td>
             <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDateTime(m.createdAt)}</Td>

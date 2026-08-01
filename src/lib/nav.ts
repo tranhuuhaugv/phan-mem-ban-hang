@@ -52,10 +52,7 @@ export const NAV: NavItem[] = [
     icon: "Boxes",
     color: "#4f46e5",
     href: "/kho",
-    links: [
-      { label: "Danh sách tồn kho", href: "/kho" },
-      { label: "Kiểm kê", href: "/kho/kiem-ke" },
-    ],
+    links: [{ label: "Danh sách tồn kho", href: "/kho" }],
   },
   {
     key: "nhap-kho",
