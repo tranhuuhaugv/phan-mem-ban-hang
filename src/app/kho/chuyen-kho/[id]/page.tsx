@@ -1,13 +1,14 @@
 "use client";
 
 import { use, useState } from "react";
-import { Loader2, Package, ArrowRight, PackageCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, Package, ArrowRight, PackageCheck, Trash2 } from "lucide-react";
 import { AccessGuard, BackLink, DetailRow, SectionCard } from "@/components/parts";
 import { PageHeader, Card, Badge, Button, Field, Textarea, Table, Tr, Td } from "@/components/ui";
-import { Modal } from "@/components/modal";
+import { Modal, ConfirmDialog } from "@/components/modal";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
-import { useApi, apiPost } from "@/lib/api";
+import { useApi, apiPost, apiDelete } from "@/lib/api";
 import { TRANSFER_STATUS_LABEL, type StockTransferDetail, type TransferStatus } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
 
@@ -27,11 +28,13 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 }
 
 function Inner({ id }: { id: string }) {
+  const router = useRouter();
   const { data, loading, error, reload } = useApi<StockTransferDetail>(`/api/stock-transfers/${id}`);
   const { can } = useRole();
   const toast = useToast();
   const [openReceive, setOpenReceive] = useState(false);
   const [receiverNote, setReceiverNote] = useState("");
+  const [del, setDel] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const receive = async () => {
@@ -74,11 +77,18 @@ function Inner({ id }: { id: string }) {
         title={`Phiếu chuyển ${r.code}`}
         subtitle={`Ngày ${formatDateTime(r.date)}`}
         actions={
-          canReceive && (
-            <Button onClick={() => setOpenReceive(true)}>
-              <PackageCheck size={16} /> Nhận hàng
-            </Button>
-          )
+          <div className="flex gap-2">
+            {canReceive && (
+              <Button onClick={() => setOpenReceive(true)}>
+                <PackageCheck size={16} /> Nhận hàng
+              </Button>
+            )}
+            {can("chuyen-kho").remove && (
+              <Button variant="outline" className="text-[var(--danger)]" onClick={() => setDel(true)}>
+                <Trash2 size={16} /> Xoá phiếu
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -159,6 +169,24 @@ function Inner({ id }: { id: string }) {
           </Field>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        open={del}
+        onClose={() => setDel(false)}
+        onConfirm={async () => {
+          try {
+            await apiDelete(`/api/stock-transfers/${id}`);
+            toast(`Đã xoá phiếu chuyển ${r.code}`);
+            router.push("/kho/chuyen-kho");
+          } catch (e) {
+            toast(e instanceof Error ? e.message : "Xoá thất bại", "warning");
+          }
+        }}
+        title="Xoá phiếu chuyển"
+        message={`Xoá phiếu ${r.code}?${r.status === "da_nhan" ? " Máy sẽ được đưa về chi nhánh gửi." : ""}`}
+        confirmText="Xoá"
+        danger
+      />
     </div>
   );
 }

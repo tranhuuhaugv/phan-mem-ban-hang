@@ -1,12 +1,16 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
-import { Loader2, Package, Wallet, CreditCard } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, Package, Wallet, CreditCard, Trash2 } from "lucide-react";
 import { AccessGuard, BackLink, DetailRow, SectionCard } from "@/components/parts";
-import { PageHeader, Card, Badge, Table, Tr, Td } from "@/components/ui";
+import { PageHeader, Card, Badge, Table, Tr, Td, Button } from "@/components/ui";
+import { ConfirmDialog } from "@/components/modal";
 import { MachineStatusBadge } from "@/components/status";
-import { useApi } from "@/lib/api";
+import { useToast } from "@/components/toast";
+import { useRole } from "@/components/role-context";
+import { useApi, apiDelete } from "@/lib/api";
 import { PAY_METHOD_LABEL, type StockInDetail } from "@/lib/types";
 import { formatVND, formatDateTime } from "@/lib/format";
 
@@ -20,7 +24,11 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 }
 
 function Inner({ id }: { id: string }) {
+  const router = useRouter();
+  const toast = useToast();
+  const { can } = useRole();
   const { data, loading, error } = useApi<StockInDetail>(`/api/stock-ins/${id}`);
+  const [del, setDel] = useState(false);
 
   if (loading) {
     return (
@@ -43,7 +51,17 @@ function Inner({ id }: { id: string }) {
   return (
     <div>
       <BackLink href="/kho/phieu-nhap">Về danh sách phiếu nhập</BackLink>
-      <PageHeader title={`Phiếu nhập ${r.code}`} subtitle={`Ngày ${formatDateTime(r.date)}`} />
+      <PageHeader
+        title={`Phiếu nhập ${r.code}`}
+        subtitle={`Ngày ${formatDateTime(r.date)}`}
+        actions={
+          can("nhap-kho").remove && (
+            <Button variant="outline" className="text-[var(--danger)]" onClick={() => setDel(true)}>
+              <Trash2 size={16} /> Xoá phiếu
+            </Button>
+          )
+        }
+      />
 
       <div className="grid items-start gap-4 lg:grid-cols-3">
         <SectionCard title="Thông tin phiếu">
@@ -122,6 +140,24 @@ function Inner({ id }: { id: string }) {
           </Table>
         </SectionCard>
       </div>
+
+      <ConfirmDialog
+        open={del}
+        onClose={() => setDel(false)}
+        onConfirm={async () => {
+          try {
+            await apiDelete(`/api/stock-ins/${id}`);
+            toast(`Đã xoá phiếu nhập ${r.code}`);
+            router.push("/kho/phieu-nhap");
+          } catch (e) {
+            toast(e instanceof Error ? e.message : "Xoá thất bại", "warning");
+          }
+        }}
+        title="Xoá phiếu nhập"
+        message={`Xoá phiếu ${r.code}? Các máy của phiếu (nếu chưa bán) sẽ bị xoá khỏi kho, công nợ NCC & phiếu chi được đảo lại.`}
+        confirmText="Xoá"
+        danger
+      />
     </div>
   );
 }

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { AccessGuard } from "@/components/parts";
 import { Button, PageHeader, Table, Tr, Td, Select, SearchInput } from "@/components/ui";
+import { ConfirmDialog } from "@/components/modal";
 import { OrderStatusBadge } from "@/components/status";
+import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
-import { useApi } from "@/lib/api";
+import { useApi, apiDelete } from "@/lib/api";
 import { ORDER_STATUS_LABEL, type Order, type OrderStatus } from "@/lib/types";
 import { formatVND, formatDateTime } from "@/lib/format";
 import Link from "next/link";
@@ -21,9 +23,11 @@ export default function Page() {
 
 function Inner() {
   const { can } = useRole();
-  const { data, loading } = useApi<Order[]>("/api/orders");
+  const toast = useToast();
+  const { data, loading, reload } = useApi<Order[]>("/api/orders");
   const [status, setStatus] = useState<OrderStatus | "all">("all");
   const [q, setQ] = useState("");
+  const [del, setDel] = useState<Order | null>(null);
   const rows = (data ?? []).filter((o) => {
     if (status !== "all" && o.status !== status) return false;
     return `${o.code} ${o.customerName} ${o.phone} ${o.serial} ${o.model}`.toLowerCase().includes(q.trim().toLowerCase());
@@ -55,7 +59,7 @@ function Inner() {
         </Select>
       </div>
 
-      <Table head={["Mã đơn", "Khách hàng", "Máy (Mã SP)", "Giá bán", "Cọc", "Ngày", "Trạng thái"]}>
+      <Table head={["Mã đơn", "Khách hàng", "Máy (Mã SP)", "Giá bán", "Cọc", "Ngày", "Trạng thái", ""]}>
         {rows.map((o) => (
           <Tr key={o.id}>
             <Td>
@@ -77,6 +81,15 @@ function Inner() {
             <Td>
               <OrderStatusBadge status={o.status} />
             </Td>
+            <Td>
+              <div className="flex justify-end">
+                {can("dat-hang").remove && (
+                  <Button size="sm" variant="ghost" className="text-[var(--danger)]" onClick={() => setDel(o)}>
+                    <Trash2 size={15} />
+                  </Button>
+                )}
+              </div>
+            </Td>
           </Tr>
         ))}
         {rows.length === 0 && (
@@ -87,6 +100,25 @@ function Inner() {
           </Tr>
         )}
       </Table>
+
+      <ConfirmDialog
+        open={!!del}
+        onClose={() => setDel(null)}
+        onConfirm={async () => {
+          if (!del) return;
+          try {
+            await apiDelete(`/api/orders/${del.id}`);
+            toast(`Đã xoá đơn ${del.code}`);
+            reload();
+          } catch (e) {
+            toast(e instanceof Error ? e.message : "Xoá thất bại", "warning");
+          }
+        }}
+        title="Xoá đơn hàng"
+        message={del ? `Xoá đơn ${del.code}? Máy trả về tồn kho, phiếu thu cọc/thanh toán của đơn bị xoá.` : ""}
+        confirmText="Xoá"
+        danger
+      />
     </div>
   );
 }

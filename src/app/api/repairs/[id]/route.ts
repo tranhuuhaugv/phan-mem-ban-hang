@@ -52,3 +52,24 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
   });
   return ok(serializeRepair(row));
 });
+
+// Xoá phiếu sửa: máy về tồn kho (nếu đang sửa), xoá phiếu thu tiền sửa
+export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
+  await requirePermission("sua-chua", "remove");
+  const { id } = await params;
+  const r = await db.repair.findUnique({ where: { id }, include: { invoices: true } });
+  if (!r) throw new HttpError(404, "Không tìm thấy phiếu sửa");
+  if (r.invoices.length) throw new HttpError(409, "Phiếu đã có hoá đơn — xoá hoá đơn trước");
+
+  await db.$transaction(async (tx) => {
+    if (r.machineId) {
+      const m = await tx.machine.findUnique({ where: { id: r.machineId } });
+      if (m && (m.status === "dang_sua" || m.status === "bao_hanh")) {
+        await tx.machine.update({ where: { id: r.machineId }, data: { status: "ton_kho" } });
+      }
+    }
+    await tx.cashFlow.deleteMany({ where: { content: { contains: r.code } } });
+    await tx.repair.delete({ where: { id } });
+  });
+  return ok({ ok: true });
+});

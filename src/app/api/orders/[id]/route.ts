@@ -62,3 +62,19 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
 
   return ok(serializeOrder(row));
 });
+
+// Xoá đơn hàng: máy về tồn kho, xoá phiếu thu cọc/thanh toán của đơn
+export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
+  await requirePermission("dat-hang", "remove");
+  const { id } = await params;
+  const order = await db.order.findUnique({ where: { id }, include: { invoices: true } });
+  if (!order) throw new HttpError(404, "Không tìm thấy đơn hàng");
+  if (order.invoices.length) throw new HttpError(409, "Đơn đã có hoá đơn — xoá hoá đơn trước");
+
+  await db.$transaction(async (tx) => {
+    if (order.machineId) await tx.machine.update({ where: { id: order.machineId }, data: { status: "ton_kho" } });
+    await tx.cashFlow.deleteMany({ where: { content: { contains: order.code } } });
+    await tx.order.delete({ where: { id } });
+  });
+  return ok({ ok: true });
+});

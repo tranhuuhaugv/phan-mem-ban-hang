@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Plus, FileText } from "lucide-react";
 import { AccessGuard } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, Badge, SearchInput } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, Badge, SearchInput, Select } from "@/components/ui";
 import { useRole } from "@/components/role-context";
 import { useApi } from "@/lib/api";
 import type { StockInListItem } from "@/lib/types";
@@ -24,10 +24,18 @@ function Inner() {
   const { data, loading } = useApi<StockInListItem[]>("/api/stock-ins");
   const receipts = data ?? [];
   const [q, setQ] = useState("");
+  const [supplier, setSupplier] = useState("all");
+  const [branch, setBranch] = useState("all");
+  const [payFilter, setPayFilter] = useState<"all" | "debt" | "paid">("all");
 
-  const rows = receipts.filter((r) =>
-    `${r.code} ${r.supplierName ?? ""} ${r.branchName ?? ""}`.toLowerCase().includes(q.trim().toLowerCase()),
-  );
+  const suppliers = Array.from(new Set(receipts.map((r) => r.supplierName).filter(Boolean) as string[])).sort();
+  const branches = Array.from(new Set(receipts.map((r) => r.branchName).filter(Boolean) as string[])).sort();
+
+  const rows = receipts
+    .filter((r) => `${r.code} ${r.supplierName ?? ""} ${r.branchName ?? ""}`.toLowerCase().includes(q.trim().toLowerCase()))
+    .filter((r) => supplier === "all" || r.supplierName === supplier)
+    .filter((r) => branch === "all" || r.branchName === branch)
+    .filter((r) => payFilter === "all" || (payFilter === "debt" ? r.debt > 0 : r.debt <= 0));
 
   return (
     <div>
@@ -44,7 +52,28 @@ function Inner() {
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, NCC, chi nhánh..." className="max-w-sm" />
+        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, NCC, chi nhánh..." className="max-w-xs" />
+        <Select value={supplier} onChange={(e) => setSupplier(e.target.value)} className="w-48">
+          <option value="all">Tất cả NCC</option>
+          {suppliers.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </Select>
+        <Select value={branch} onChange={(e) => setBranch(e.target.value)} className="w-44">
+          <option value="all">Tất cả chi nhánh</option>
+          {branches.map((b) => (
+            <option key={b} value={b}>
+              {b}
+            </option>
+          ))}
+        </Select>
+        <Select value={payFilter} onChange={(e) => setPayFilter(e.target.value as typeof payFilter)} className="w-36">
+          <option value="all">Tất cả TT</option>
+          <option value="debt">Còn nợ</option>
+          <option value="paid">Đã đủ</option>
+        </Select>
       </div>
 
       <Table head={["Mã phiếu", "Ngày", "Nhà cung cấp", "Chi nhánh", "Số máy", "Tổng tiền", "Đã trả", "Còn nợ"]}>

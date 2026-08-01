@@ -32,7 +32,6 @@ function Inner() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [serial, setSerial] = useState("");
-  const [isCustomer, setIsCustomer] = useState(false);
   const [query, setQuery] = useState("");
   const [model, setModel] = useState("");
   const [errorDesc, setErrorDesc] = useState("");
@@ -54,19 +53,12 @@ function Inner() {
 
   const pickMachine = (m: Machine) => {
     setSerial(m.serial);
-    setIsCustomer(false);
     setModel(nameOf(m));
   };
   const resetMachine = () => {
     setSerial("");
-    setIsCustomer(false);
     setQuery("");
     setModel("");
-  };
-  const useCustomer = () => {
-    setIsCustomer(true);
-    setSerial("");
-    setModel(query.trim());
   };
 
   const costN = Number(cost) || 0;
@@ -142,7 +134,7 @@ function Inner() {
               <CustomerField name={customerName} phone={customerPhone} onName={setCustomerName} onPhone={setCustomerPhone} layout="grid" />
             </Field>
 
-            <Field label="Mặt hàng (máy cần sửa)" hint="Chọn máy trong kho, hoặc + để nhập máy khách / ngoài">
+            <Field label="Mặt hàng (máy cần sửa)" hint="Tìm máy trong kho; không chọn thì mặc định là máy khách (nhập tên ở ô Model)">
               {serial && picked ? (
                 <div className="flex items-center justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2">
                   <span className="min-w-0">
@@ -153,20 +145,13 @@ function Inner() {
                     Đổi
                   </Button>
                 </div>
-              ) : isCustomer ? (
-                <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-[var(--border)] px-3 py-2 text-sm">
-                  <span className="text-[var(--muted)]">Máy khách / ngoài kho — nhập tên ở ô Model</span>
-                  <button type="button" onClick={resetMachine} className="text-xs text-[var(--primary)] hover:underline">
-                    Chọn máy kho
-                  </button>
-                </div>
               ) : (
                 <div>
                   <div className="relative">
                     <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
                     <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm mã SP / tên máy..." className="pl-8" />
                   </div>
-                  {(query.trim() || matches.length > 0) && (
+                  {query.trim() && (
                     <div className="mt-1 overflow-hidden rounded-lg border border-[var(--border)]">
                       {matches.map((m) => (
                         <button
@@ -181,13 +166,9 @@ function Inner() {
                           </span>
                         </button>
                       ))}
-                      <button
-                        type="button"
-                        onClick={useCustomer}
-                        className="flex w-full items-center gap-1.5 border-b border-[var(--border)] px-3 py-2 text-left text-sm font-medium text-[var(--primary)] hover:bg-[var(--surface-2)]"
-                      >
-                        <Plus size={15} /> Máy khách / ngoài kho{query.trim() ? ` “${query.trim()}”` : ""}
-                      </button>
+                      {matches.length === 0 && (
+                        <p className="px-3 py-2 text-center text-xs text-[var(--muted)]">Không có máy khớp trong kho</p>
+                      )}
                       <button
                         type="button"
                         onClick={() => setQuickAdd(true)}
@@ -303,7 +284,6 @@ function Inner() {
         onCreated={(m) => {
           reloadMachines();
           setSerial(m.serial);
-          setIsCustomer(false);
           setModel(nameOf(m));
         }}
       />

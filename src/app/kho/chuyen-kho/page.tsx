@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Plus, ArrowRight, ArrowRightLeft } from "lucide-react";
 import { AccessGuard } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, Badge, SearchInput } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, Badge, SearchInput, Select } from "@/components/ui";
 import { useRole } from "@/components/role-context";
 import { useApi } from "@/lib/api";
 import { TRANSFER_STATUS_LABEL, type StockTransferListItem, type TransferStatus } from "@/lib/types";
@@ -30,10 +30,11 @@ function Inner() {
   const { data, loading } = useApi<StockTransferListItem[]>("/api/stock-transfers");
   const rowsData = data ?? [];
   const [q, setQ] = useState("");
+  const [statusF, setStatusF] = useState<"all" | TransferStatus>("all");
 
-  const rows = rowsData.filter((r) =>
-    `${r.code} ${r.fromBranch ?? ""} ${r.toBranch ?? ""} ${r.createdByName ?? ""}`.toLowerCase().includes(q.trim().toLowerCase()),
-  );
+  const rows = rowsData
+    .filter((r) => `${r.code} ${r.fromBranch ?? ""} ${r.toBranch ?? ""} ${r.createdByName ?? ""}`.toLowerCase().includes(q.trim().toLowerCase()))
+    .filter((r) => statusF === "all" || r.status === statusF);
 
   return (
     <div>
@@ -50,7 +51,15 @@ function Inner() {
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, chi nhánh, người tạo..." className="max-w-sm" />
+        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, chi nhánh, người tạo..." className="max-w-xs" />
+        <Select value={statusF} onChange={(e) => setStatusF(e.target.value as typeof statusF)} className="w-44">
+          <option value="all">Tất cả trạng thái</option>
+          {(["dang_chuyen", "da_nhan", "huy"] as TransferStatus[]).map((s) => (
+            <option key={s} value={s}>
+              {TRANSFER_STATUS_LABEL[s]}
+            </option>
+          ))}
+        </Select>
       </div>
 
       <Table head={["Mã phiếu", "Ngày", "Từ kho → Tới kho", "SL chuyển / nhận", "Trạng thái", "Người tạo", "Ngày nhận", "Người nhận"]}>

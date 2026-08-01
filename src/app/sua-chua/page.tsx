@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Eye, CheckCircle2, ReceiptText, Wallet, CreditCard } from "lucide-react";
+import { Plus, Eye, CheckCircle2, ReceiptText, Wallet, CreditCard, Trash2 } from "lucide-react";
 import { AccessGuard, DetailRow } from "@/components/parts";
 import { Button, PageHeader, Table, Tr, Td, Select, SearchInput, Input, Field, Textarea } from "@/components/ui";
-import { Modal } from "@/components/modal";
+import { Modal, ConfirmDialog } from "@/components/modal";
 import { RepairStatusBadge } from "@/components/status";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
-import { useApi, apiPatch } from "@/lib/api";
+import { useApi, apiPatch, apiDelete } from "@/lib/api";
 import { REPAIR_STATUS_LABEL, type Repair, type RepairStatus } from "@/lib/types";
 import { formatVND, formatDateTime } from "@/lib/format";
 
@@ -25,16 +25,20 @@ function Inner() {
   const toast = useToast();
   const { data, loading, reload } = useApi<Repair[]>("/api/repairs");
   const [status, setStatus] = useState<RepairStatus | "all">("all");
+  const [branch, setBranch] = useState("all");
   const [view, setView] = useState<Repair | null>(null);
   const [actualCost, setActualCost] = useState("");
   const [note, setNote] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
   const [payMethod, setPayMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
+  const [del, setDel] = useState<Repair | null>(null);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const branches = Array.from(new Set((data ?? []).map((r) => r.branchName).filter(Boolean) as string[])).sort();
   const rows = (data ?? []).filter((r) => {
     if (status !== "all" && r.status !== status) return false;
+    if (branch !== "all" && r.branchName !== branch) return false;
     return `${r.code} ${r.serial} ${r.model} ${r.customerName ?? ""} ${r.errorDesc} ${r.technician ?? ""}`
       .toLowerCase()
       .includes(q.trim().toLowerCase());
@@ -86,8 +90,8 @@ function Inner() {
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, tên máy, khách, lỗi, KTV..." />
-        <Select value={status} onChange={(e) => setStatus(e.target.value as RepairStatus | "all")} className="w-52">
+        <SearchInput value={q} onChange={setQ} placeholder="Tìm mã phiếu, tên máy, khách, lỗi, KTV..." className="max-w-xs" />
+        <Select value={status} onChange={(e) => setStatus(e.target.value as RepairStatus | "all")} className="w-48">
           <option value="all">Tất cả trạng thái</option>
           {Object.entries(REPAIR_STATUS_LABEL).map(([k, v]) => (
             <option key={k} value={k}>
@@ -95,6 +99,16 @@ function Inner() {
             </option>
           ))}
         </Select>
+        {branches.length > 0 && (
+          <Select value={branch} onChange={(e) => setBranch(e.target.value)} className="w-44">
+            <option value="all">Tất cả chi nhánh</option>
+            {branches.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </Select>
+        )}
       </div>
 
       <Table head={["Mã phiếu", "Máy", "Khách hàng", "Lỗi", "KTV nhận", "CP dự kiến", "Ngày nhận", "Trạng thái", ""]}>
@@ -144,6 +158,11 @@ function Inner() {
               <Button variant="outline" onClick={() => setView(null)}>
                 Đóng
               </Button>
+              {can("sua-chua").remove && (
+                <Button variant="outline" className="text-[var(--danger)]" onClick={() => { setDel(view); setView(null); }}>
+                  <Trash2 size={15} /> Xoá
+                </Button>
+              )}
               {can("hoa-don").create && (
                 <Button variant="outline" href={`/hoa-don/tao?repair=${view.id}`}>
                   <ReceiptText size={15} /> Tạo phiếu thanh toán
@@ -225,6 +244,25 @@ function Inner() {
           </div>
         )}
       </Modal>
+
+      <ConfirmDialog
+        open={!!del}
+        onClose={() => setDel(null)}
+        onConfirm={async () => {
+          if (!del) return;
+          try {
+            await apiDelete(`/api/repairs/${del.id}`);
+            toast(`Đã xoá phiếu ${del.code}`);
+            reload();
+          } catch (e) {
+            toast(e instanceof Error ? e.message : "Xoá thất bại", "warning");
+          }
+        }}
+        title="Xoá phiếu sửa"
+        message={del ? `Xoá phiếu sửa ${del.code}? Máy (nếu trong kho) trả về tồn kho, phiếu thu tiền sửa bị xoá.` : ""}
+        confirmText="Xoá"
+        danger
+      />
     </div>
   );
 }
