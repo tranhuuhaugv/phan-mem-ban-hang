@@ -40,8 +40,7 @@ export const NAV: NavItem[] = [
     color: "#2563eb",
     href: "/tong-quan",
     links: [
-      { label: "Dashboard", href: "/tong-quan" },
-      { label: "Biểu đồ doanh thu", href: "/tong-quan#bieu-do" },
+      { label: "Biểu đồ doanh thu", href: "/tong-quan" },
       { label: "Danh mục sản phẩm", href: "/danh-muc", menu: "danh-muc" },
       { label: "Nhà cung cấp", href: "/nha-cung-cap", menu: "nha-cung-cap" },
       { label: "Chi nhánh", href: "/chi-nhanh", menu: "chi-nhanh" },

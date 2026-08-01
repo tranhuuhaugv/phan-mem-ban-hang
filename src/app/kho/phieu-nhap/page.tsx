@@ -9,6 +9,7 @@ import { useRole } from "@/components/role-context";
 import { useApi } from "@/lib/api";
 import type { StockInListItem } from "@/lib/types";
 import { formatVND, formatDateTime } from "@/lib/format";
+import { PayAmount } from "@/components/pay";
 
 export default function Page() {
   return (
@@ -124,7 +125,9 @@ function Inner() {
               <Badge tone="muted">{r.machineCount} máy</Badge>
             </Td>
             <Td className="whitespace-nowrap font-medium">{formatVND(r.total)}</Td>
-            <Td className="whitespace-nowrap text-sm text-[var(--success)]">{formatVND(r.paid)}</Td>
+            <Td className="whitespace-nowrap text-sm text-[var(--success)]">
+              <PayAmount amount={r.paid} method={r.payMethod} />
+            </Td>
             <Td className="whitespace-nowrap font-medium">
               {r.debt > 0 ? <span className="text-[var(--danger)]">{formatVND(r.debt)}</span> : <span className="text-xs text-[var(--muted)]">Đủ</span>}
             </Td>

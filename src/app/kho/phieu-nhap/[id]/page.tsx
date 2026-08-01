@@ -3,7 +3,7 @@
 import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Package, Wallet, CreditCard, Trash2 } from "lucide-react";
+import { Loader2, Package, Wallet, CreditCard, Landmark, Trash2 } from "lucide-react";
 import { AccessGuard, BackLink, DetailRow, SectionCard } from "@/components/parts";
 import { PageHeader, Card, Badge, Table, Tr, Td, Button } from "@/components/ui";
 import { ConfirmDialog } from "@/components/modal";
@@ -100,7 +100,7 @@ function Inner({ id }: { id: string }) {
             </div>
             {r.paid > 0 && (
               <div className="flex items-center gap-1.5 pt-1 text-xs text-[var(--muted)]">
-                {r.payMethod === "chuyen_khoan" ? <CreditCard size={13} /> : <Wallet size={13} />}
+                {r.payMethod === "tien_mat" ? <Wallet size={13} /> : r.payMethod === "the" ? <CreditCard size={13} /> : <Landmark size={13} />}
                 Hình thức: {r.payMethod ? (PAY_METHOD_LABEL[r.payMethod] ?? r.payMethod) : "—"}
               </div>
             )}

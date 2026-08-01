@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { Boxes, TrendingUp, PackagePlus, DollarSign, CalendarDays, Loader2 } from "lucide-react";
 import { Card, PageHeader, Badge, Input, Select } from "@/components/ui";
+import { PayBreakdown } from "@/components/pay";
 import { useRole } from "@/components/role-context";
 import { useApi } from "@/lib/api";
 import { formatVND, formatVNDShort, formatDate } from "@/lib/format";
@@ -21,11 +22,15 @@ import { BuyStatusBadge, OrderStatusBadge, RepairStatusBadge } from "@/component
 import type { BuyReceipt, Order, Repair } from "@/lib/types";
 import Link from "next/link";
 
+type ByMethod = { tien_mat: number; the: number; chuyen_khoan: number };
+
 interface Stats {
   period: {
     thu: number;
     chi: number;
     profit: number;
+    revByMethod: ByMethod;
+    expByMethod: ByMethod;
     ordersCount: number;
     machinesIn: number;
     buyCount: number;
@@ -84,7 +89,17 @@ function Stat({
   );
 }
 
-function DayTile({ label, value, tone }: { label: string; value: string; tone: string }) {
+function DayTile({
+  label,
+  value,
+  tone,
+  breakdown,
+}: {
+  label: string;
+  value: string;
+  tone: string;
+  breakdown?: { total: number; byMethod?: ByMethod };
+}) {
   return (
     <div
       className="rounded-xl border p-3"
@@ -97,14 +112,19 @@ function DayTile({ label, value, tone }: { label: string; value: string; tone: s
         {label}
       </p>
       <p className="mt-0.5 text-lg font-bold tracking-tight" style={{ color: tone }}>
-        {value}
+        {breakdown ? (
+          <PayBreakdown total={breakdown.total} byMethod={breakdown.byMethod} className="text-lg font-bold" />
+        ) : (
+          value
+        )}
       </p>
     </div>
   );
 }
 
-type PeriodMode = "day" | "month" | "year";
+type PeriodMode = "day" | "month" | "quarter" | "year";
 const today = new Date().toISOString().slice(0, 10);
+const defaultQuarter = `Q${Math.floor((Number(today.slice(5, 7)) - 1) / 3) + 1}`;
 
 export default function DashboardPage() {
   const { can } = useRole();
@@ -114,8 +134,11 @@ export default function DashboardPage() {
   const [day, setDay] = useState(today);
   const [month, setMonth] = useState(today.slice(0, 7));
   const [year, setYear] = useState(today.slice(0, 4));
+  const [qYear, setQYear] = useState(today.slice(0, 4));
+  const [quarter, setQuarter] = useState(defaultQuarter);
 
-  const prefix = mode === "day" ? day : mode === "month" ? month : year;
+  const prefix =
+    mode === "day" ? day : mode === "month" ? month : mode === "quarter" ? `${qYear}-${quarter}` : year;
   const { data: stats, loading } = useApi<Stats>(`/api/stats?period=${prefix}`);
   const { data: buyReceipts } = useApi<BuyReceipt[]>("/api/buy-receipts");
   const { data: orders } = useApi<Order[]>("/api/orders");
@@ -125,7 +148,16 @@ export default function DashboardPage() {
   const d = stats?.period;
 
   const periodLabel =
-    mode === "day" ? formatDate(day) : mode === "month" ? `Tháng ${month.slice(5)}/${month.slice(0, 4)}` : `Năm ${year}`;
+    mode === "day"
+      ? formatDate(day)
+      : mode === "month"
+        ? `Tháng ${month.slice(5)}/${month.slice(0, 4)}`
+        : mode === "quarter"
+          ? `Quý ${quarter.slice(1)}/${qYear}`
+          : `Năm ${year}`;
+
+  // Nhãn cho biểu đồ theo kỳ
+  const seriesBy = mode === "day" ? "7 ngày" : mode === "month" ? "theo ngày" : "theo tháng";
 
   const pill = (active: boolean) =>
     `rounded-md px-3 py-1 text-[13px] font-medium transition-colors ${
@@ -156,6 +188,9 @@ export default function DashboardPage() {
               <button type="button" onClick={() => setMode("month")} className={pill(mode === "month")}>
                 Tháng
               </button>
+              <button type="button" onClick={() => setMode("quarter")} className={pill(mode === "quarter")}>
+                Quý
+              </button>
               <button type="button" onClick={() => setMode("year")} className={pill(mode === "year")}>
                 Năm
               </button>
@@ -163,6 +198,24 @@ export default function DashboardPage() {
             {mode === "day" && <Input type="date" value={day} onChange={(e) => setDay(e.target.value)} className="w-44" />}
             {mode === "month" && (
               <Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="w-40" />
+            )}
+            {mode === "quarter" && (
+              <div className="flex items-center gap-2">
+                <Select value={quarter} onChange={(e) => setQuarter(e.target.value)} className="w-28">
+                  {["Q1", "Q2", "Q3", "Q4"].map((q) => (
+                    <option key={q} value={q}>
+                      Quý {q.slice(1)}
+                    </option>
+                  ))}
+                </Select>
+                <Select value={qYear} onChange={(e) => setQYear(e.target.value)} className="w-24">
+                  {["2024", "2025", "2026", "2027"].map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             )}
             {mode === "year" && (
               <Select value={year} onChange={(e) => setYear(e.target.value)} className="w-28">
@@ -176,8 +229,10 @@ export default function DashboardPage() {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <DayTile label="Doanh thu" value={formatVND(d?.thu ?? 0)} tone="#16a34a" />
-          {seeProfit && <DayTile label="Chi phí" value={formatVND(d?.chi ?? 0)} tone="#dc2626" />}
+          <DayTile label="Doanh thu" value={formatVND(d?.thu ?? 0)} tone="#16a34a" breakdown={{ total: d?.thu ?? 0, byMethod: d?.revByMethod }} />
+          {seeProfit && (
+            <DayTile label="Chi phí" value={formatVND(d?.chi ?? 0)} tone="#dc2626" breakdown={{ total: d?.chi ?? 0, byMethod: d?.expByMethod }} />
+          )}
           {seeProfit && <DayTile label="Lợi nhuận" value={formatVND(d?.profit ?? 0)} tone="#2563eb" />}
           <DayTile label="Đơn hàng mới" value={`${d?.ordersCount ?? 0}`} tone="#059669" />
           <DayTile label="Máy nhập kho" value={`${d?.machinesIn ?? 0}`} tone="#4f46e5" />
@@ -225,7 +280,7 @@ export default function DashboardPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3" id="bieu-do">
         <Card className="p-4 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-semibold">Doanh thu 7 ngày</h2>
+            <h2 className="font-semibold">Doanh thu {seriesBy}</h2>
             {seeProfit && (
               <Badge tone="primary">
                 <TrendingUp size={12} /> dữ liệu thật
@@ -253,7 +308,7 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="p-4">
-          <h2 className="mb-3 font-semibold">{seeProfit ? "Chi phí theo ngày" : "Doanh thu theo ngày"}</h2>
+          <h2 className="mb-3 font-semibold">{seeProfit ? `Chi phí ${seriesBy}` : `Doanh thu ${seriesBy}`}</h2>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={stats?.series ?? []} margin={{ left: -18, right: 8, top: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />

@@ -159,7 +159,7 @@ export const POST = handler(async (req: Request) => {
     b.amountPaid === undefined || b.amountPaid === null || b.amountPaid === ""
       ? total
       : Math.max(0, Math.min(total, Math.round(Number(b.amountPaid) || 0)));
-  const payMethod = b.payMethod === "chuyen_khoan" ? "chuyen_khoan" : "tien_mat";
+  const payMethod = b.payMethod === "the" || b.payMethod === "chuyen_khoan" ? b.payMethod : "tien_mat";
 
   const custName = String(b.customerName ?? "Khách lẻ").trim() || "Khách lẻ";
   const custPhone = b.phone ? String(b.phone).trim() : "";

@@ -39,7 +39,7 @@ export const POST = handler(async (req: Request) => {
   const actualCost = completeNow ? Number(b.actualCost) || 0 : null;
   const partsNote = b.note ? String(b.note).trim() : null; // mặt hàng / linh kiện đã thay
   const amountPaid = completeNow ? Math.max(0, Math.round(Number(b.amountPaid) || 0)) : 0;
-  const payMethod = b.payMethod === "chuyen_khoan" ? "chuyen_khoan" : "tien_mat";
+  const payMethod = b.payMethod === "the" || b.payMethod === "chuyen_khoan" ? b.payMethod : "tien_mat";
 
   const row = await db.$transaction(async (tx) => {
     // Tự lưu khách vào danh bạ (nếu có SĐT)

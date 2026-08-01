@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Eye, CheckCircle2, ReceiptText, Wallet, CreditCard, Trash2 } from "lucide-react";
+import { Plus, Eye, CheckCircle2, ReceiptText, Wallet, CreditCard, Landmark, Trash2 } from "lucide-react";
 import { AccessGuard, DetailRow } from "@/components/parts";
 import { Button, PageHeader, Table, Tr, Td, FootTd, SearchInput, Input, Field, Textarea, FilterBar, FilterSelect, DateRange, ClearFilterButton, inDateRange } from "@/components/ui";
 import { Modal, ConfirmDialog } from "@/components/modal";
@@ -30,7 +30,7 @@ function Inner() {
   const [actualCost, setActualCost] = useState("");
   const [note, setNote] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
-  const [payMethod, setPayMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
+  const [payMethod, setPayMethod] = useState<"tien_mat" | "the" | "chuyen_khoan">("tien_mat");
   const [del, setDel] = useState<Repair | null>(null);
   const [q, setQ] = useState("");
   const [fromDate, setFromDate] = useState("");
@@ -249,10 +249,11 @@ function Inner() {
                     </Button>
                   </div>
                 </Field>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {([
                     { k: "tien_mat", label: "Tiền mặt", icon: Wallet },
-                    { k: "chuyen_khoan", label: "Chuyển khoản", icon: CreditCard },
+                    { k: "the", label: "Thẻ", icon: CreditCard },
+                    { k: "chuyen_khoan", label: "Chuyển khoản", icon: Landmark },
                   ] as const).map(({ k, label, icon: Icon }) => {
                     const active = payMethod === k;
                     return (

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Search, Plus, RefreshCw, Wallet, CreditCard } from "lucide-react";
+import { Save, Search, Plus, RefreshCw, Wallet, CreditCard, Landmark } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { CustomerField } from "@/components/customer-field";
 import { Button, PageHeader, Field, Input, Textarea, Select } from "@/components/ui";
@@ -42,7 +42,7 @@ function Inner() {
   const [parts, setParts] = useState("");
   const [cost, setCost] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
-  const [payMethod, setPayMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
+  const [payMethod, setPayMethod] = useState<"tien_mat" | "the" | "chuyen_khoan">("tien_mat");
   const [busy, setBusy] = useState(false);
 
   const nameOf = (m: Machine) => [m.brand, m.model].filter(Boolean).join(" ");
@@ -210,10 +210,11 @@ function Inner() {
                   <Input type="number" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="VD: 450000" />
                 </Field>
                 <Field label="Hình thức">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {([
                       { k: "tien_mat", label: "Tiền mặt", icon: Wallet },
-                      { k: "chuyen_khoan", label: "Chuyển khoản", icon: CreditCard },
+                      { k: "the", label: "Thẻ", icon: CreditCard },
+                      { k: "chuyen_khoan", label: "Chuyển khoản", icon: Landmark },
                     ] as const).map(({ k, label, icon: Icon }) => {
                       const active = payMethod === k;
                       return (

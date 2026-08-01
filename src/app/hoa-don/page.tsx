@@ -11,6 +11,7 @@ import { useRole } from "@/components/role-context";
 import { useApi, apiDelete } from "@/lib/api";
 import type { Invoice } from "@/lib/types";
 import { formatVND, formatDateTime } from "@/lib/format";
+import { PayAmount } from "@/components/pay";
 
 export default function Page() {
   return (
@@ -104,7 +105,9 @@ function Inner() {
                 )}
               </Td>
               <Td className="font-medium">{iv.customerName}</Td>
-              <Td className="whitespace-nowrap font-medium">{formatVND(iv.value)}</Td>
+              <Td className="whitespace-nowrap font-medium">
+                <PayAmount amount={iv.value} method={iv.payMethod} />
+              </Td>
               <Td className="whitespace-nowrap">
                 {iv.debt && iv.debt > 0 ? (
                   <span className="font-medium text-[var(--danger)]">{formatVND(iv.debt)}</span>

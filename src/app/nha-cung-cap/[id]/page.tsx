@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
-import { Loader2, Package, Wallet, CreditCard, HandCoins } from "lucide-react";
+import { Loader2, Package, Wallet, CreditCard, Landmark, HandCoins } from "lucide-react";
 import Link from "next/link";
 import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { PageHeader, Card, Badge, Table, Tr, Td, Button, Field, Input } from "@/components/ui";
@@ -45,7 +45,7 @@ function Inner({ id }: { id: string }) {
   const toast = useToast();
   const [openPay, setOpenPay] = useState(false);
   const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
+  const [method, setMethod] = useState<"tien_mat" | "the" | "chuyen_khoan">("tien_mat");
   const [busy, setBusy] = useState(false);
 
   const openPayModal = (debt: number) => {
@@ -174,7 +174,7 @@ function Inner({ id }: { id: string }) {
                 <Td>
                   {p.method ? (
                     <span className="inline-flex items-center gap-1 text-xs">
-                      {p.method === "chuyen_khoan" ? <CreditCard size={13} /> : <Wallet size={13} />}
+                      {p.method === "tien_mat" ? <Wallet size={13} /> : p.method === "the" ? <CreditCard size={13} /> : <Landmark size={13} />}
                       {PAY_METHOD_LABEL[p.method] ?? p.method}
                     </span>
                   ) : (
@@ -218,10 +218,11 @@ function Inner({ id }: { id: string }) {
             <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" autoFocus />
           </Field>
           <Field label="Hình thức">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {([
                 { k: "tien_mat", label: "Tiền mặt", icon: Wallet },
-                { k: "chuyen_khoan", label: "Chuyển khoản", icon: CreditCard },
+                { k: "the", label: "Thẻ", icon: CreditCard },
+                { k: "chuyen_khoan", label: "Chuyển khoản", icon: Landmark },
               ] as const).map(({ k, label, icon: Icon }) => {
                 const active = method === k;
                 return (

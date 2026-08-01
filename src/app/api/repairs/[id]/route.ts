@@ -16,7 +16,7 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
   if (!repair) throw new HttpError(404, "Không tìm thấy phiếu sửa");
 
   const amountPaid = b.amountPaid !== undefined ? Math.max(0, Math.round(Number(b.amountPaid) || 0)) : 0;
-  const payMethod = b.payMethod === "chuyen_khoan" ? "chuyen_khoan" : "tien_mat";
+  const payMethod = b.payMethod === "the" || b.payMethod === "chuyen_khoan" ? b.payMethod : "tien_mat";
 
   const row = await db.$transaction(async (tx) => {
     const updated = await tx.repair.update({

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, FileText, PackageOpen, Plus, Trash2, Search, Wrench, Wallet, CreditCard } from "lucide-react";
+import { Save, FileText, PackageOpen, Plus, Trash2, Search, Wrench, Wallet, CreditCard, Landmark } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard, DetailRow } from "@/components/parts";
 import { CustomerField } from "@/components/customer-field";
 import { Button, PageHeader, Field, Input, Select } from "@/components/ui";
@@ -45,7 +45,7 @@ function Inner() {
   const [orderId, setOrderId] = useState("");
   const [repairId, setRepairId] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
-  const [payMethod, setPayMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
+  const [payMethod, setPayMethod] = useState<"tien_mat" | "the" | "chuyen_khoan">("tien_mat");
   const [busy, setBusy] = useState(false);
 
   // Nhận link từ đơn hàng (?order=) hoặc phiếu sửa (?repair=)
@@ -345,10 +345,11 @@ function Inner() {
                       </div>
                     </Field>
                     <Field label="Hình thức">
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-3 gap-2">
                         {([
                           { k: "tien_mat", label: "Tiền mặt", icon: Wallet },
-                          { k: "chuyen_khoan", label: "Chuyển khoản", icon: CreditCard },
+                          { k: "the", label: "Thẻ", icon: CreditCard },
+                          { k: "chuyen_khoan", label: "Chuyển khoản", icon: Landmark },
                         ] as const).map(({ k, label, icon: Icon }) => {
                           const active = payMethod === k;
                           return (

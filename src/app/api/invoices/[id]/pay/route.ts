@@ -18,7 +18,7 @@ export const POST = handler(async (req: Request, { params }: Ctx) => {
   const amount = Math.round(Number(b.amount) || 0);
   if (amount <= 0) throw new HttpError(400, "Nhập số tiền thanh toán");
   const pay = Math.min(amount, debt);
-  const method = b.method === "chuyen_khoan" ? "chuyen_khoan" : "tien_mat";
+  const method = b.method === "the" || b.method === "chuyen_khoan" ? b.method : "tien_mat";
 
   const cashCode = await nextCode("cashFlow", "PT-", 4);
   await db.$transaction(async (tx) => {

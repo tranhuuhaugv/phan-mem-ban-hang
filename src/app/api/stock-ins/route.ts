@@ -89,7 +89,7 @@ export const POST = handler(async (req: Request) => {
   const total = items.reduce((s, it) => s + it.quantity * it.unitPrice, 0);
   const paid = Math.max(0, Math.min(total, Math.round(Number(b.amountPaid) || 0)));
   const unpaid = total - paid;
-  const payMethod = b.payMethod === "chuyen_khoan" ? "chuyen_khoan" : "tien_mat";
+  const payMethod = b.payMethod === "the" || b.payMethod === "chuyen_khoan" ? b.payMethod : "tien_mat";
 
   const source = supplierName ? `NCC: ${supplierName}` : "Nhập kho";
 

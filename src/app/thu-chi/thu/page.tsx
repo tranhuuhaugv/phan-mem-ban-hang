@@ -8,7 +8,8 @@ import { Modal, ConfirmDialog } from "@/components/modal";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
 import { useApi, apiPost, apiPatch, apiDelete } from "@/lib/api";
-import type { CashFlow } from "@/lib/types";
+import { PAY_METHOD_LABEL, type CashFlow } from "@/lib/types";
+import { PayAmount } from "@/components/pay";
 import { formatVND, formatDateTime } from "@/lib/format";
 
 const CATEGORIES = ["Bán hàng", "Thu nợ", "Sửa chữa", "Khác"];
@@ -39,7 +40,7 @@ function Inner() {
   const [editId, setEditId] = useState<string | null>(null);
   const [del, setDel] = useState<CashFlow | null>(null);
   const [busy, setBusy] = useState(false);
-  const [f, setF] = useState({ date: todayISO(), amount: "", category: "Bán hàng", partner: "", content: "" });
+  const [f, setF] = useState({ date: todayISO(), amount: "", category: "Bán hàng", partner: "", content: "", method: "tien_mat" });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setF((s) => ({ ...s, [k]: e.target.value }));
 
@@ -53,12 +54,12 @@ function Inner() {
 
   const openCreate = () => {
     setEditId(null);
-    setF({ date: todayISO(), amount: "", category: "Bán hàng", partner: "", content: "" });
+    setF({ date: todayISO(), amount: "", category: "Bán hàng", partner: "", content: "", method: "tien_mat" });
     setOpen(true);
   };
   const openEdit = (c: CashFlow) => {
     setEditId(c.id);
-    setF({ date: c.date.slice(0, 10), amount: String(c.amount), category: c.category, partner: c.partner ?? "", content: c.content });
+    setF({ date: c.date.slice(0, 10), amount: String(c.amount), category: c.category, partner: c.partner ?? "", content: c.content, method: c.method ?? "tien_mat" });
     setOpen(true);
   };
   const save = async () => {
@@ -144,7 +145,9 @@ function Inner() {
             <Td>{c.content}</Td>
             <Td className="text-[var(--muted)]">{c.category}</Td>
             <Td className="text-sm">{c.partner || <span className="text-[var(--muted)]">—</span>}</Td>
-            <Td className="whitespace-nowrap font-medium text-[var(--success)]">+{formatVND(c.amount)}</Td>
+            <Td className="whitespace-nowrap font-medium text-[var(--success)]">
+              <PayAmount amount={c.amount} method={c.method} prefix="+" />
+            </Td>
             <Td>
               <div className="flex items-center justify-end gap-1">
                 {perm.edit && (
@@ -202,6 +205,15 @@ function Inner() {
             </Field>
             <Field label="Người nộp">
               <Input value={f.partner} onChange={set("partner")} placeholder="Tên khách / đối tác" />
+            </Field>
+            <Field label="Hình thức thanh toán">
+              <Select value={f.method} onChange={set("method")}>
+                {(["tien_mat", "the", "chuyen_khoan"] as const).map((m) => (
+                  <option key={m} value={m}>
+                    {PAY_METHOD_LABEL[m]}
+                  </option>
+                ))}
+              </Select>
             </Field>
           </div>
           <Field label="Nội dung *">

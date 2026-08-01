@@ -3,33 +3,119 @@ import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/auth";
 import { handler, ok } from "@/lib/api-utils";
 
-// Thống kê Dashboard: tổng quan + số liệu theo kỳ (?period=YYYY | YYYY-MM | YYYY-MM-DD)
+type Mode = "day" | "month" | "quarter" | "year";
+
+// Gộp mọi hình thức lạ / rỗng về tiền mặt (mặc định của app)
+function methodKey(m?: string | null): "tien_mat" | "the" | "chuyen_khoan" {
+  return m === "the" || m === "chuyen_khoan" ? m : "tien_mat";
+}
+
+// Thống kê Dashboard: tổng quan + số liệu theo kỳ
+// ?period=YYYY | YYYY-MM | YYYY-MM-DD | YYYY-Qn
 export const GET = handler(async (req: NextRequest) => {
   await requirePermission("tong-quan", "view");
   const period = req.nextUrl.searchParams.get("period") ?? new Date().toISOString().slice(0, 10);
 
-  // Khoảng thời gian của kỳ
-  const start = new Date(
-    period.length === 4 ? `${period}-01-01T00:00:00` : period.length === 7 ? `${period}-01T00:00:00` : `${period}T00:00:00`,
-  );
-  const end = new Date(start);
-  if (period.length === 4) end.setFullYear(end.getFullYear() + 1);
-  else if (period.length === 7) end.setMonth(end.getMonth() + 1);
-  else end.setDate(end.getDate() + 1);
+  // Xác định kỳ + khoảng thời gian [start, end)
+  let mode: Mode;
+  let start: Date;
+  let end: Date;
+  const qMatch = /^(\d{4})-Q([1-4])$/.exec(period);
+  if (qMatch) {
+    mode = "quarter";
+    const y = Number(qMatch[1]);
+    const q = Number(qMatch[2]);
+    start = new Date(y, (q - 1) * 3, 1);
+    end = new Date(y, q * 3, 1);
+  } else if (period.length === 4) {
+    mode = "year";
+    start = new Date(Number(period), 0, 1);
+    end = new Date(Number(period) + 1, 0, 1);
+  } else if (period.length === 7) {
+    mode = "month";
+    const [y, m] = period.split("-").map(Number);
+    start = new Date(y, m - 1, 1);
+    end = new Date(y, m, 1);
+  } else {
+    mode = "day";
+    const [y, m, d] = period.split("-").map(Number);
+    start = new Date(y, m - 1, d);
+    end = new Date(y, m - 1, d + 1);
+  }
 
   const inPeriod = { gte: start, lt: end };
 
-  const [thuAgg, chiAgg, ordersCount, machinesIn, buyCount, repairCount, invoiceCount] = await Promise.all([
-    db.cashFlow.aggregate({ _sum: { amount: true }, where: { type: "thu", date: inPeriod } }),
-    db.cashFlow.aggregate({ _sum: { amount: true }, where: { type: "chi", date: inPeriod } }),
+  // Khoảng dữ liệu cho biểu đồ: ngày → 7 ngày gần nhất tính đến ngày chọn; còn lại = đúng kỳ
+  const seriesStart = mode === "day" ? new Date(start.getFullYear(), start.getMonth(), start.getDate() - 6) : start;
+  const seriesEnd = end;
+
+  const [ordersCount, machinesIn, buyCount, repairCount, invoiceCount, flows] = await Promise.all([
     db.order.count({ where: { createdAt: inPeriod } }),
     db.machine.count({ where: { createdAt: inPeriod } }),
     db.buyReceipt.count({ where: { createdAt: inPeriod } }),
     db.repair.count({ where: { receiveDate: inPeriod } }),
     db.invoice.count({ where: { createdAt: inPeriod } }),
+    db.cashFlow.findMany({
+      where: { date: { gte: seriesStart, lt: seriesEnd } },
+      select: { date: true, type: true, amount: true, method: true },
+    }),
   ]);
 
-  // Tổng quan chung
+  // Số liệu + tách theo hình thức thanh toán trong kỳ
+  let thu = 0;
+  let chi = 0;
+  const revByMethod = { tien_mat: 0, the: 0, chuyen_khoan: 0 };
+  const expByMethod = { tien_mat: 0, the: 0, chuyen_khoan: 0 };
+  for (const f of flows) {
+    const d = new Date(f.date);
+    if (d < start || d >= end) continue;
+    const mk = methodKey(f.method);
+    if (f.type === "thu") {
+      thu += f.amount;
+      revByMethod[mk] += f.amount;
+    } else {
+      chi += f.amount;
+      expByMethod[mk] += f.amount;
+    }
+  }
+
+  // Chuỗi dữ liệu cho biểu đồ (tự đổi theo kỳ)
+  const series: { day: string; revenue: number; expense: number }[] = [];
+  const pushBucket = (label: string, from: Date, to: Date) => {
+    let revenue = 0;
+    let expense = 0;
+    for (const f of flows) {
+      const d = new Date(f.date);
+      if (d < from || d >= to) continue;
+      if (f.type === "thu") revenue += f.amount;
+      else expense += f.amount;
+    }
+    series.push({ day: label, revenue, expense });
+  };
+  const pad = (n: number) => String(n).padStart(2, "0");
+  if (mode === "day") {
+    for (let i = 6; i >= 0; i--) {
+      const d0 = new Date(start.getFullYear(), start.getMonth(), start.getDate() - i);
+      const d1 = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + 1);
+      pushBucket(`${pad(d0.getDate())}/${pad(d0.getMonth() + 1)}`, d0, d1);
+    }
+  } else if (mode === "month") {
+    const cur = new Date(start);
+    while (cur < end) {
+      const nxt = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 1);
+      pushBucket(String(cur.getDate()), new Date(cur), nxt);
+      cur.setDate(cur.getDate() + 1);
+    }
+  } else {
+    const cur = new Date(start);
+    while (cur < end) {
+      const nxt = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+      pushBucket(`Th ${cur.getMonth() + 1}`, new Date(cur), nxt);
+      cur.setMonth(cur.getMonth() + 1);
+    }
+  }
+
+  // Tổng quan chung (không phụ thuộc kỳ)
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -44,29 +130,9 @@ export const GET = handler(async (req: NextRequest) => {
     db.repair.count({ where: { status: { not: "hoan_tat" } } }),
   ]);
 
-  // Doanh thu 7 ngày gần nhất (biểu đồ)
-  const series: { day: string; revenue: number; expense: number }[] = [];
-  for (let i = 6; i >= 0; i--) {
-    const d0 = new Date(todayStart);
-    d0.setDate(d0.getDate() - i);
-    const d1 = new Date(d0);
-    d1.setDate(d1.getDate() + 1);
-    const [thu, chi] = await Promise.all([
-      db.cashFlow.aggregate({ _sum: { amount: true }, where: { type: "thu", date: { gte: d0, lt: d1 } } }),
-      db.cashFlow.aggregate({ _sum: { amount: true }, where: { type: "chi", date: { gte: d0, lt: d1 } } }),
-    ]);
-    series.push({
-      day: `${String(d0.getDate()).padStart(2, "0")}/${String(d0.getMonth() + 1).padStart(2, "0")}`,
-      revenue: thu._sum.amount ?? 0,
-      expense: chi._sum.amount ?? 0,
-    });
-  }
-
-  const thu = thuAgg._sum.amount ?? 0;
-  const chi = chiAgg._sum.amount ?? 0;
-
   return ok({
-    period: { thu, chi, profit: thu - chi, ordersCount, machinesIn, buyCount, repairCount, invoiceCount },
+    mode,
+    period: { thu, chi, profit: thu - chi, revByMethod, expByMethod, ordersCount, machinesIn, buyCount, repairCount, invoiceCount },
     summary: {
       revenueToday: revToday._sum.amount ?? 0,
       revenueMonth: revMonth._sum.amount ?? 0,

@@ -26,6 +26,7 @@ export const POST = handler(async (req: Request) => {
       content: String(b.content).trim(),
       category: String(b.category ?? "Khác").trim(),
       partner: b.partner ? String(b.partner).trim() : null,
+      method: b.method ? String(b.method) : undefined,
     },
   });
   return ok(serializeCashFlow(row), 201);

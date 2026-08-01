@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Plus, RefreshCw, Wallet, CreditCard, Trash2, Pencil, Package, History } from "lucide-react";
+import { Save, Plus, RefreshCw, Wallet, CreditCard, Landmark, Trash2, Pencil, Package, History } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { Button, PageHeader, Field, Input, Select, Table, Tr, Td } from "@/components/ui";
 import { Modal } from "@/components/modal";
@@ -81,7 +81,7 @@ function Inner() {
     setDraft((s) => ({ ...s, name: p.name, category: p.category || s.category, salePrice: p.salePrice || s.salePrice }));
   // Thanh toán
   const [amountPaid, setAmountPaid] = useState("");
-  const [payMethod, setPayMethod] = useState<"tien_mat" | "chuyen_khoan">("tien_mat");
+  const [payMethod, setPayMethod] = useState<"tien_mat" | "the" | "chuyen_khoan">("tien_mat");
   const [busy, setBusy] = useState(false);
 
   // Modal thêm nhanh NCC
@@ -298,10 +298,11 @@ function Inner() {
                 </div>
               </Field>
               <Field label="Hình thức thanh toán">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {([
                     { k: "tien_mat", label: "Tiền mặt", icon: Wallet },
-                    { k: "chuyen_khoan", label: "Chuyển khoản", icon: CreditCard },
+                    { k: "the", label: "Thẻ", icon: CreditCard },
+                    { k: "chuyen_khoan", label: "Chuyển khoản", icon: Landmark },
                   ] as const).map(({ k, label, icon: Icon }) => {
                     const active = payMethod === k;
                     return (

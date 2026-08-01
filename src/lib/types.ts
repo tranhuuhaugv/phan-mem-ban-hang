@@ -171,6 +171,7 @@ export interface CashFlow {
 
 export const PAY_METHOD_LABEL: Record<string, string> = {
   tien_mat: "Tiền mặt",
+  the: "Thẻ",
   chuyen_khoan: "Chuyển khoản",
 };
 
