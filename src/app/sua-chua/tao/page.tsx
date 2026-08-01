@@ -158,7 +158,7 @@ function Inner() {
                           key={m.id}
                           type="button"
                           onClick={() => pickMachine(m)}
-                          className="flex w-full items-center justify-between border-b border-[var(--border)] px-3 py-2 text-left hover:bg-[var(--surface-2)]"
+                          className="flex w-full items-center justify-between border-b border-[var(--border)] px-3 py-2 text-left last:border-0 hover:bg-[var(--surface-2)]"
                         >
                           <span className="min-w-0">
                             <span className="block truncate text-sm font-medium">{nameOf(m)}</span>
@@ -169,15 +169,11 @@ function Inner() {
                       {matches.length === 0 && (
                         <p className="px-3 py-2 text-center text-xs text-[var(--muted)]">Không có máy khớp trong kho</p>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => setQuickAdd(true)}
-                        className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-sm font-medium text-[var(--primary)] hover:bg-[var(--surface-2)]"
-                      >
-                        <Plus size={15} /> Nhập kho “{query.trim()}” (thêm vào kho)
-                      </button>
                     </div>
                   )}
+                  <Button type="button" variant="outline" size="sm" className="mt-2 text-[var(--primary)]" onClick={() => setQuickAdd(true)}>
+                    <Plus size={15} /> Nhập kho{query.trim() ? ` “${query.trim()}”` : " (thêm máy mới)"}
+                  </Button>
                 </div>
               )}
             </Field>
