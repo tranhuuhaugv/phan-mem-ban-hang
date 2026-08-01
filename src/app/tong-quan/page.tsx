@@ -157,7 +157,7 @@ export default function DashboardPage() {
           : `Năm ${year}`;
 
   // Nhãn cho biểu đồ theo kỳ
-  const seriesBy = mode === "day" ? "7 ngày" : mode === "month" ? "theo ngày" : "theo tháng";
+  const seriesBy = mode === "day" ? "theo giờ" : mode === "month" ? "theo ngày" : "theo tháng";
 
   const pill = (active: boolean) =>
     `rounded-md px-3 py-1 text-[13px] font-medium transition-colors ${

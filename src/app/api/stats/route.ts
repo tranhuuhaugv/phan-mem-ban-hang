@@ -45,8 +45,8 @@ export const GET = handler(async (req: NextRequest) => {
 
   const inPeriod = { gte: start, lt: end };
 
-  // Khoảng dữ liệu cho biểu đồ: ngày → 7 ngày gần nhất tính đến ngày chọn; còn lại = đúng kỳ
-  const seriesStart = mode === "day" ? new Date(start.getFullYear(), start.getMonth(), start.getDate() - 6) : start;
+  // Biểu đồ dựng đúng trong kỳ đang chọn
+  const seriesStart = start;
   const seriesEnd = end;
 
   const [ordersCount, machinesIn, buyCount, repairCount, invoiceCount, flows] = await Promise.all([
@@ -92,12 +92,11 @@ export const GET = handler(async (req: NextRequest) => {
     }
     series.push({ day: label, revenue, expense });
   };
-  const pad = (n: number) => String(n).padStart(2, "0");
   if (mode === "day") {
-    for (let i = 6; i >= 0; i--) {
-      const d0 = new Date(start.getFullYear(), start.getMonth(), start.getDate() - i);
-      const d1 = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + 1);
-      pushBucket(`${pad(d0.getDate())}/${pad(d0.getMonth() + 1)}`, d0, d1);
+    for (let h = 0; h < 24; h++) {
+      const from = new Date(start.getFullYear(), start.getMonth(), start.getDate(), h);
+      const to = new Date(start.getFullYear(), start.getMonth(), start.getDate(), h + 1);
+      pushBucket(`${h}h`, from, to);
     }
   } else if (mode === "month") {
     const cur = new Date(start);
