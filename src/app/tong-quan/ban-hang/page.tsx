@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Trophy } from "lucide-react";
 import { AccessGuard } from "@/components/parts";
 import {
@@ -93,7 +94,15 @@ function Inner() {
               <Td className="text-[var(--muted)]">
                 {i === 0 ? <Trophy size={15} className="text-[#eab308]" /> : i + 1}
               </Td>
-              <Td className="font-medium">{r.name}</Td>
+              <Td>
+                {r.sellerId ? (
+                  <Link href={`/tong-quan/ban-hang/${r.sellerId}`} className="font-medium text-[var(--primary)] hover:underline">
+                    {r.name}
+                  </Link>
+                ) : (
+                  <span className="font-medium">{r.name}</span>
+                )}
+              </Td>
               <Td>{r.role ? <Badge tone={ROLE_TONE[r.role]}>{ROLE_LABEL[r.role]}</Badge> : <span className="text-xs text-[var(--muted)]">—</span>}</Td>
               <Td className="font-semibold">{r.count}</Td>
               <Td className="whitespace-nowrap font-medium">{formatVND(r.revenue)}</Td>
