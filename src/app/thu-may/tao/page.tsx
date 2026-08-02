@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Save } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { CustomerField } from "@/components/customer-field";
-import { Button, PageHeader, Field, Input, Textarea } from "@/components/ui";
+import { Button, PageHeader, Field, Input, Textarea, MoneyInput } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { apiPost } from "@/lib/api";
 import type { BuyReceipt } from "@/lib/types";
@@ -64,7 +64,7 @@ function Inner() {
                 <Input value={f.config} onChange={set("config")} placeholder="VD: i7/16GB/512GB" />
               </Field>
               <Field label="Giá thu (₫) *">
-                <Input type="number" value={f.price} onChange={set("price")} placeholder="VD: 11200000" required />
+                <MoneyInput value={f.price} onChange={(v) => setF((s) => ({ ...s, price: v }))} placeholder="VD: 11.200.000" />
               </Field>
             </div>
             <div className="mt-3">

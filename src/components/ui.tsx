@@ -239,6 +239,34 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return <select {...props} className={`${inputCls} ${props.className ?? ""}`} />;
 }
 
+// Ô nhập tiền — hiển thị có dấu chấm ngăn cách (1.000.000), trả về chuỗi số thuần
+export function MoneyInput({
+  value,
+  onChange,
+  placeholder,
+  className = "",
+  autoFocus,
+}: {
+  value: string | number;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  className?: string;
+  autoFocus?: boolean;
+}) {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  const display = digits === "" ? "" : Number(digits).toLocaleString("vi-VN");
+  return (
+    <input
+      inputMode="numeric"
+      value={display}
+      onChange={(e) => onChange(e.target.value.replace(/\D/g, ""))}
+      placeholder={placeholder}
+      autoFocus={autoFocus}
+      className={`${inputCls} ${className}`}
+    />
+  );
+}
+
 // ---- Compact filter bar (danh sách) ----
 const filterCtrlCls =
   "h-8 max-w-[10rem] rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 text-xs outline-none focus:border-[var(--primary)]";

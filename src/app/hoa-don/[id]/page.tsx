@@ -3,7 +3,7 @@
 import { use, useState } from "react";
 import { Printer, ShieldCheck, Loader2, HandCoins, Wallet, CreditCard, Landmark } from "lucide-react";
 import { AccessGuard, BackLink } from "@/components/parts";
-import { Button, PageHeader, Card, Field, Input } from "@/components/ui";
+import { Button, PageHeader, Card, Field, MoneyInput } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
@@ -290,7 +290,7 @@ function Inner({ id }: { id: string }) {
             Còn nợ: <span className="font-semibold text-[var(--danger)]">{formatVND(iv.debt)}</span>
           </div>
           <Field label="Số tiền thu (₫)" hint="Tối đa bằng số còn nợ; thu một phần cũng được">
-            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" autoFocus />
+            <MoneyInput value={amount} onChange={setAmount} placeholder="0" autoFocus />
           </Field>
           <Field label="Hình thức">
             <div className="grid grid-cols-3 gap-2">

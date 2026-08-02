@@ -3,7 +3,7 @@
 import { use, useState } from "react";
 import { Laptop, Loader2, Pencil, Save } from "lucide-react";
 import { AccessGuard, BackLink, DetailRow, SectionCard } from "@/components/parts";
-import { PageHeader, Card, Badge, Button, Field, Input, Select, Textarea } from "@/components/ui";
+import { PageHeader, Card, Badge, Button, Field, Input, Select, Textarea, MoneyInput } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { MachineStatusBadge } from "@/components/status";
 import { MachineHistory, type HistoryEvent } from "@/components/machine-history";
@@ -230,10 +230,10 @@ function Inner({ serial }: { serial: string }) {
             <Input value={f.screen ?? ""} onChange={set("screen")} placeholder='14" FHD...' />
           </Field>
           <Field label="Giá nhập (₫)">
-            <Input type="number" value={f.purchasePrice ?? ""} onChange={set("purchasePrice")} />
+            <MoneyInput value={f.purchasePrice ?? ""} onChange={(v) => setF((s) => ({ ...s, purchasePrice: v }))} />
           </Field>
           <Field label="Giá bán (₫)" hint="Bỏ trống nếu chưa niêm yết">
-            <Input type="number" value={f.salePrice ?? ""} onChange={set("salePrice")} />
+            <MoneyInput value={f.salePrice ?? ""} onChange={(v) => setF((s) => ({ ...s, salePrice: v }))} />
           </Field>
           <Field label="Chi nhánh">
             <Select value={f.branchId ?? ""} onChange={set("branchId")}>

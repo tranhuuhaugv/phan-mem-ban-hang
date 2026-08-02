@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Save, FileText, PackageOpen, Plus, Trash2, Search, Wrench, Wallet, CreditCard, Landmark } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard, DetailRow } from "@/components/parts";
 import { CustomerField } from "@/components/customer-field";
-import { Button, PageHeader, Field, Input, Select } from "@/components/ui";
+import { Button, PageHeader, Field, Input, Select, MoneyInput } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { useApi, apiPost } from "@/lib/api";
 import { QuickAddMachine } from "@/components/quick-add-machine";
@@ -290,10 +290,9 @@ function Inner() {
                               <div className="text-xs text-[var(--muted)]">{i.config}</div>
                             </td>
                             <td className="px-3 py-2">
-                              <Input
-                                type="number"
+                              <MoneyInput
                                 value={i.price || ""}
-                                onChange={(e) => setPrice(i.serial, Number(e.target.value))}
+                                onChange={(v) => setPrice(i.serial, Number(v))}
                                 placeholder="Nhập giá"
                                 className="h-8 w-32"
                               />
@@ -338,7 +337,7 @@ function Inner() {
                   <div className="space-y-3">
                     <Field label="Số tiền khách trả (₫)" hint="Để trống = thu đủ; nhập ít hơn = khách còn nợ">
                       <div className="flex gap-2">
-                        <Input type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder={`Thu đủ ${formatVND(total)}`} className="flex-1" />
+                        <MoneyInput value={amountPaid} onChange={setAmountPaid} placeholder={`Thu đủ ${formatVND(total)}`} className="flex-1" />
                         <Button type="button" variant="outline" onClick={() => setAmountPaid(String(total))} disabled={total <= 0}>
                           Trả đủ
                         </Button>

@@ -4,7 +4,7 @@ import { use, useState } from "react";
 import { Loader2, Package, Wallet, CreditCard, Landmark, HandCoins } from "lucide-react";
 import Link from "next/link";
 import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
-import { PageHeader, Card, Badge, Table, Tr, Td, Button, Field, Input } from "@/components/ui";
+import { PageHeader, Card, Badge, Table, Tr, Td, Button, Field, MoneyInput } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { MachineStatusBadge } from "@/components/status";
 import { useRole } from "@/components/role-context";
@@ -215,7 +215,7 @@ function Inner({ id }: { id: string }) {
             Công nợ hiện tại: <span className="font-semibold text-[var(--danger)]">{formatVND(stats.debt)}</span>
           </div>
           <Field label="Số tiền thanh toán (₫)" hint="Tối đa bằng công nợ; trả một phần cũng được">
-            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" autoFocus />
+            <MoneyInput value={amount} onChange={setAmount} placeholder="0" autoFocus />
           </Field>
           <Field label="Hình thức">
             <div className="grid grid-cols-3 gap-2">

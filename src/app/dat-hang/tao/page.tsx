@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Save } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard, DetailRow } from "@/components/parts";
 import { CustomerField } from "@/components/customer-field";
-import { Button, PageHeader, Field, Input, Select } from "@/components/ui";
+import { Button, PageHeader, Field, Select, MoneyInput } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { useApi, apiPost } from "@/lib/api";
 import type { Machine, Order } from "@/lib/types";
@@ -28,8 +28,6 @@ function Inner() {
   const [f, setF] = useState({ customerName: "", phone: "", sellPrice: "", deposit: "" });
   const [busy, setBusy] = useState(false);
   const picked = available.find((m) => m.serial === serial);
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setF((s) => ({ ...s, [k]: e.target.value }));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,10 +95,10 @@ function Inner() {
           <SectionCard title="Thanh toán">
             <div className="space-y-3">
               <Field label="Giá bán (₫) *">
-                <Input type="number" value={f.sellPrice} onChange={set("sellPrice")} placeholder="VD: 16500000" required />
+                <MoneyInput value={f.sellPrice} onChange={(v) => setF((s) => ({ ...s, sellPrice: v }))} placeholder="VD: 16.500.000" />
               </Field>
               <Field label="Tiền cọc (₫)" hint="Có cọc → tự ghi phiếu thu vào sổ quỹ">
-                <Input type="number" value={f.deposit} onChange={set("deposit")} placeholder="VD: 5000000" />
+                <MoneyInput value={f.deposit} onChange={(v) => setF((s) => ({ ...s, deposit: v }))} placeholder="VD: 5.000.000" />
               </Field>
             </div>
           </SectionCard>

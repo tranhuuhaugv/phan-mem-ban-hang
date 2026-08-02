@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Save, Search, Plus, RefreshCw, Wallet, CreditCard, Landmark } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { CustomerField } from "@/components/customer-field";
-import { Button, PageHeader, Field, Input, Textarea, Select } from "@/components/ui";
+import { Button, PageHeader, Field, Input, Textarea, Select, MoneyInput } from "@/components/ui";
 import { useToast } from "@/components/toast";
 import { useApi, apiPost } from "@/lib/api";
 import { QuickAddMachine } from "@/components/quick-add-machine";
@@ -207,7 +207,7 @@ function Inner() {
                   <Input value={parts} onChange={(e) => setParts(e.target.value)} placeholder="VD: Thay pin, thay bàn phím..." />
                 </Field>
                 <Field label="Tiền công / chi phí sửa (₫)">
-                  <Input type="number" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="VD: 450000" />
+                  <MoneyInput value={cost} onChange={setCost} placeholder="VD: 450.000" />
                 </Field>
                 <Field label="Hình thức">
                   <div className="grid grid-cols-3 gap-2">
@@ -236,7 +236,7 @@ function Inner() {
               <div className="space-y-3">
                 <Field label="Số tiền khách trả (₫)">
                   <div className="flex gap-2">
-                    <Input type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="0" className="flex-1" />
+                    <MoneyInput value={amountPaid} onChange={setAmountPaid} placeholder="0" className="flex-1" />
                     <Button type="button" variant="outline" onClick={() => setAmountPaid(String(costN))} disabled={costN <= 0}>
                       Trả đủ
                     </Button>

@@ -288,6 +288,9 @@ model Invoice {
   repairId String?
   repair   Repair? @relation(fields: [repairId], references: [id])
 
+  sellerId String?
+  seller   Account? @relation(fields: [sellerId], references: [id])
+
   items      InvoiceItem[]
   warranties Warranty[]
 }
@@ -370,4 +373,6 @@ model Account {
   status       AccountStatus @default(active)
   lastLogin    DateTime?
   createdAt    DateTime      @default(now())
+
+  sales Invoice[]
 }

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Plus, RefreshCw, Wallet, CreditCard, Landmark, Trash2, Pencil, Package, History } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
-import { Button, PageHeader, Field, Input, Select, Table, Tr, Td } from "@/components/ui";
+import { Button, PageHeader, Field, Input, Select, Table, Tr, Td, MoneyInput } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { useToast } from "@/components/toast";
 import { useApi, apiPost } from "@/lib/api";
@@ -291,7 +291,7 @@ function Inner() {
             <div className="space-y-3">
               <Field label="Số tiền thanh toán (₫)" hint="Để trống / trả thiếu → phần còn lại ghi nợ nhà cung cấp">
                 <div className="flex gap-2">
-                  <Input type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="0" className="flex-1" />
+                  <MoneyInput value={amountPaid} onChange={setAmountPaid} placeholder="0" className="flex-1" />
                   <Button type="button" variant="outline" onClick={() => setAmountPaid(String(total))} disabled={total <= 0}>
                     Trả đủ
                   </Button>
@@ -415,10 +415,10 @@ function Inner() {
               />
             </Field>
             <Field label="Đơn giá (₫)" hint="Giá nhập / máy">
-              <Input type="number" value={draft.unitPrice} onChange={setD("unitPrice")} placeholder="0" />
+              <MoneyInput value={draft.unitPrice} onChange={(v) => setDraft((s) => ({ ...s, unitPrice: v }))} placeholder="0" />
             </Field>
             <Field label="Giá bán (₫)">
-              <Input type="number" value={draft.salePrice} onChange={setD("salePrice")} placeholder="Giá bán niêm yết" />
+              <MoneyInput value={draft.salePrice} onChange={(v) => setDraft((s) => ({ ...s, salePrice: v }))} placeholder="Giá bán niêm yết" />
             </Field>
           </div>
           <Field label="Mô tả">

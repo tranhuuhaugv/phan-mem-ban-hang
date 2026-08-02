@@ -16,7 +16,7 @@ export const GET = handler(async () => {
 // - mode "order": orderId → lấy máy từ đơn, đơn Đã giao, thu phần còn lại
 // - mode "repair": repairId → thu tiền công sửa, ghi phiếu thu
 export const POST = handler(async (req: Request) => {
-  await requirePermission("hoa-don", "create");
+  const user = await requirePermission("hoa-don", "create");
   const b = await req.json();
   const code = await nextCode("invoice", "HD-", 4);
 
@@ -38,6 +38,7 @@ export const POST = handler(async (req: Request) => {
       const invoice = await tx.invoice.create({
         data: {
           code,
+          sellerId: user.id,
           kind: "sua_chua",
           customerName: custName,
           phone: custPhone || null,
@@ -85,6 +86,7 @@ export const POST = handler(async (req: Request) => {
       const invoice = await tx.invoice.create({
         data: {
           code,
+          sellerId: user.id,
           kind: "don_hang",
           customerName: order.customerName,
           phone: order.phone || null,
@@ -171,6 +173,7 @@ export const POST = handler(async (req: Request) => {
     const invoice = await tx.invoice.create({
       data: {
         code,
+        sellerId: user.id,
         kind: "ban",
         customerName: custName,
         phone: custPhone || null,

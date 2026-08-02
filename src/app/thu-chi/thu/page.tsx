@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, ArrowUpCircle, Pencil, Trash2 } from "lucide-react";
 import { AccessGuard } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, FootTd, Card, Field, Input, Select, SearchInput, FilterBar, FilterSelect, DateRange, ClearFilterButton, inDateRange } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, FootTd, Card, Field, Input, MoneyInput, Select, SearchInput, FilterBar, FilterSelect, DateRange, ClearFilterButton, inDateRange } from "@/components/ui";
 import { Modal, ConfirmDialog } from "@/components/modal";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
@@ -194,7 +194,7 @@ function Inner() {
               <Input type="date" value={f.date} onChange={set("date")} />
             </Field>
             <Field label="Số tiền (₫) *">
-              <Input type="number" value={f.amount} onChange={set("amount")} placeholder="VD: 5000000" autoFocus />
+              <MoneyInput value={f.amount} onChange={(v) => setF((s) => ({ ...s, amount: v }))} placeholder="VD: 5.000.000" autoFocus />
             </Field>
             <Field label="Nguồn thu">
               <Select value={f.category} onChange={set("category")}>

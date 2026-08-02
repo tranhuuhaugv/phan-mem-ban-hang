@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, Eye, CheckCircle2, ReceiptText, Wallet, CreditCard, Landmark, Trash2 } from "lucide-react";
 import { AccessGuard, DetailRow } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, FootTd, SearchInput, Input, Field, Textarea, FilterBar, FilterSelect, DateRange, ClearFilterButton, inDateRange } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, FootTd, SearchInput, MoneyInput, Field, Textarea, FilterBar, FilterSelect, DateRange, ClearFilterButton, inDateRange } from "@/components/ui";
 import { Modal, ConfirmDialog } from "@/components/modal";
 import { RepairStatusBadge } from "@/components/status";
 import { useToast } from "@/components/toast";
@@ -231,14 +231,14 @@ function Inner() {
               <div className="mt-4 space-y-3 rounded-lg bg-[var(--surface-2)] p-3">
                 <p className="text-xs font-medium text-[var(--muted)]">Hoàn tất & trả máy</p>
                 <Field label="Chi phí thực tế (₫)" hint="Bỏ trống = lấy chi phí dự kiến">
-                  <Input type="number" value={actualCost} onChange={(e) => setActualCost(e.target.value)} placeholder={String(view.estCost)} />
+                  <MoneyInput value={actualCost} onChange={setActualCost} placeholder={String(view.estCost)} />
                 </Field>
                 <Field label="Mặt hàng / linh kiện đã thay">
                   <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: Đã thay bàn phím + vệ sinh máy" />
                 </Field>
                 <Field label="Số tiền khách trả (₫)" hint="Thu tiền khi trả máy (bỏ trống nếu chưa thu)">
                   <div className="flex gap-2">
-                    <Input type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="0" className="flex-1" />
+                    <MoneyInput value={amountPaid} onChange={setAmountPaid} placeholder="0" className="flex-1" />
                     <Button
                       type="button"
                       variant="outline"
