@@ -79,7 +79,7 @@ function Inner() {
         <EmptyState text={loading ? "Đang tải dữ liệu..." : q ? "Không tìm thấy hoá đơn phù hợp" : "Chưa có hoá đơn nào"} />
       ) : (
         <Table
-          head={["Mã hoá đơn", "Nguồn", "Khách hàng", "Giá trị", "Còn nợ", "Ngày lập", ""]}
+          head={["Mã hoá đơn", "Nguồn", "Khách hàng", "Giá trị", "Còn nợ", "Ngày lập", "Người tạo", ""]}
           foot={
             <tr>
               <FootTd className="text-xs uppercase tracking-wide text-[var(--muted)]">Tổng {rows.length} HĐ</FootTd>
@@ -87,6 +87,7 @@ function Inner() {
               <FootTd />
               <FootTd className="whitespace-nowrap">{formatVND(sumValue)}</FootTd>
               <FootTd className="whitespace-nowrap text-[var(--danger)]">{sumDebt > 0 ? formatVND(sumDebt) : "—"}</FootTd>
+              <FootTd />
               <FootTd />
               <FootTd />
             </tr>
@@ -116,6 +117,7 @@ function Inner() {
                 )}
               </Td>
               <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{formatDateTime(iv.date)}</Td>
+              <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{iv.createdByName ?? "—"}</Td>
               <Td>
                 <div className="flex items-center justify-end gap-2">
                   <Link href={`/hoa-don/${iv.id}`} className="text-sm text-[var(--primary)] hover:underline">

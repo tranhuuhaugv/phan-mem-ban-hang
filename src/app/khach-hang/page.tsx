@@ -67,7 +67,7 @@ function Inner() {
         <SearchInput value={q} onChange={setQ} placeholder="Tìm theo tên hoặc SĐT..." className="max-w-sm" />
       </div>
 
-      <Table head={["Tên", "SĐT", "Địa chỉ", "Số đơn", "Tổng mua", ""]}>
+      <Table head={["Tên", "SĐT", "Địa chỉ", "Số đơn", "Tổng mua", "Người tạo", ""]}>
         {rows.map((c) => (
           <Tr key={c.id}>
             <Td>
@@ -80,6 +80,7 @@ function Inner() {
             <Td className="max-w-[220px] text-xs text-[var(--muted)]">{c.address ?? "—"}</Td>
             <Td>{c.orderCount}</Td>
             <Td className="whitespace-nowrap font-medium">{formatVND(c.totalSpent)}</Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{c.createdByName ?? "—"}</Td>
             <Td>
               <div className="flex justify-end">
                 <Button size="sm" variant="ghost" href={`/khach-hang/${c.id}`}>

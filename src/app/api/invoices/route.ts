@@ -5,7 +5,7 @@ import { handler, ok, serializeInvoice, nextCode, upsertCustomer } from "@/lib/a
 export const GET = handler(async () => {
   await requirePermission("hoa-don", "view");
   const rows = await db.invoice.findMany({
-    include: { order: true, repair: true, items: { include: { machine: true } } },
+    include: { order: true, repair: true, seller: true, items: { include: { machine: true } } },
     orderBy: { createdAt: "desc" },
   });
   return ok(rows.map(serializeInvoice));

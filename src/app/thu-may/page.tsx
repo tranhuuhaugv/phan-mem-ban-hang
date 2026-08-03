@@ -79,7 +79,7 @@ function Inner() {
         </Select>
       </div>
 
-      <Table head={["Mã phiếu", "Khách hàng", "Máy", "Giá thu", "Ngày", "Trạng thái", ""]}>
+      <Table head={["Mã phiếu", "Khách hàng", "Máy", "Giá thu", "Ngày", "Trạng thái", "Người tạo", ""]}>
         {rows.map((b) => (
           <Tr key={b.id}>
             <Td className="font-mono text-xs font-medium">{b.code}</Td>
@@ -96,6 +96,7 @@ function Inner() {
             <Td>
               <BuyStatusBadge status={b.status} />
             </Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{b.createdByName ?? "—"}</Td>
             <Td>
               <div className="flex justify-end">
                 {b.status === "cho_duyet" && perm.approve ? (

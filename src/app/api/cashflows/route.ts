@@ -9,7 +9,7 @@ export const GET = handler(async () => {
 });
 
 export const POST = handler(async (req: Request) => {
-  await requirePermission("thu-chi", "create");
+  const user = await requirePermission("thu-chi", "create");
   const b = await req.json();
   const type = b.type === "chi" ? "chi" : "thu";
   if (!b.content) throw new HttpError(400, "Nhập nội dung phiếu");
@@ -27,6 +27,7 @@ export const POST = handler(async (req: Request) => {
       category: String(b.category ?? "Khác").trim(),
       partner: b.partner ? String(b.partner).trim() : null,
       method: b.method ? String(b.method) : undefined,
+      createdByName: user.fullName,
     },
   });
   return ok(serializeCashFlow(row), 201);

@@ -123,7 +123,7 @@ function Inner() {
       </FilterBar>
 
       <Table
-        head={["Mã phiếu", "Ngày", "Nội dung", "Loại chi phí", "Người nhận", "Số tiền", ""]}
+        head={["Mã phiếu", "Ngày", "Nội dung", "Loại chi phí", "Người nhận", "Số tiền", "Người tạo", ""]}
         foot={
           rows.length > 0 ? (
             <tr>
@@ -133,6 +133,7 @@ function Inner() {
               <FootTd />
               <FootTd />
               <FootTd className="whitespace-nowrap text-[var(--danger)]">−{formatVND(total)}</FootTd>
+              <FootTd />
               <FootTd />
             </tr>
           ) : undefined
@@ -148,6 +149,7 @@ function Inner() {
             <Td className="whitespace-nowrap font-medium text-[var(--danger)]">
               <PayAmount amount={c.amount} method={c.method} prefix="−" />
             </Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{c.createdByName ?? "—"}</Td>
             <Td>
               <div className="flex items-center justify-end gap-1">
                 {perm.edit && (

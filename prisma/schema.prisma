@@ -81,6 +81,7 @@ model Machine {
   status        MachineStatus @default(ton_kho)
   note          String?
   createdAt     DateTime      @default(now())
+  createdByName String? // người tạo (nhập kho / duyệt thu máy)
 
   // Chi nhánh đang giữ máy + nhà cung cấp nhập máy (tuỳ chọn)
   branchId String?
@@ -110,6 +111,7 @@ model Branch {
   phone     String?
   note      String?
   createdAt DateTime @default(now())
+  createdByName String? // người tạo
 
   machines      Machine[]
   stockIns      StockIn[]
@@ -127,6 +129,7 @@ model Supplier {
   note      String?
   debt      Int      @default(0) // công nợ phải trả NCC (đồng)
   createdAt DateTime @default(now())
+  createdByName String? // người tạo
 
   machines Machine[]
   stockIns StockIn[]
@@ -143,6 +146,7 @@ model StockIn {
   payMethod String? // tien_mat | chuyen_khoan
   note      String?
   createdAt DateTime @default(now())
+  createdByName String? // người tạo
 
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id])
@@ -190,6 +194,7 @@ model Category {
   id   String  @id @default(cuid())
   name String  @unique
   note String?
+  createdByName String? // người tạo
 }
 
 // Phiếu thu máy (mua lại máy cũ từ khách)
@@ -204,6 +209,7 @@ model BuyReceipt {
   price        Int
   status       BuyReceiptStatus @default(cho_duyet)
   createdAt    DateTime         @default(now())
+  createdByName String? // người tạo
 
   // Duyệt phiếu → tạo máy trong kho, gán vào đây
   machineId String?  @unique
@@ -220,6 +226,7 @@ model Order {
   deposit      Int         @default(0)
   status       OrderStatus @default(cho_coc)
   createdAt    DateTime    @default(now())
+  createdByName String? // người tạo
 
   machineId String?
   machine   Machine? @relation(fields: [machineId], references: [id])
@@ -245,6 +252,7 @@ model Repair {
   returnDate    DateTime?
   note          String? // ghi chú khi trả máy / linh kiện đã thay
   status        RepairStatus @default(dang_sua)
+  createdByName String? // người tạo
 
   machineId String?
   machine   Machine? @relation(fields: [machineId], references: [id])
@@ -266,6 +274,7 @@ model CashFlow {
   category   String
   partner    String?
   method     String? // hình thức: tien_mat | chuyen_khoan
+  createdByName String? // người tạo
   supplierId String? // gắn phiếu chi với NCC (thanh toán nhập hàng)
   invoiceId  String? // gắn phiếu thu với hoá đơn (thanh toán bán hàng)
 }
@@ -330,6 +339,7 @@ model Customer {
   phone   String  @unique
   address String?
   note    String?
+  createdByName String? // người tạo
 
   orders Order[]
 }

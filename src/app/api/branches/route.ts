@@ -16,12 +16,13 @@ export const GET = handler(async () => {
       phone: b.phone ?? undefined,
       note: b.note ?? undefined,
       machineCount: b._count.machines,
+      createdByName: b.createdByName ?? undefined,
     })),
   );
 });
 
 export const POST = handler(async (req: Request) => {
-  await requirePermission("chi-nhanh", "create");
+  const user = await requirePermission("chi-nhanh", "create");
   const b = await req.json();
   const name = String(b.name ?? "").trim();
   if (!name) throw new HttpError(400, "Nhập tên chi nhánh");
@@ -33,6 +34,7 @@ export const POST = handler(async (req: Request) => {
       address: b.address ? String(b.address).trim() : null,
       phone: b.phone ? String(b.phone).trim() : null,
       note: b.note ? String(b.note).trim() : null,
+      createdByName: user.fullName,
     },
   });
   return ok(row, 201);

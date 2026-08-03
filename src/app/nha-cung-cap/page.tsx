@@ -93,7 +93,7 @@ function Inner() {
         <SearchInput value={q} onChange={setQ} placeholder="Tìm nhà cung cấp..." className="max-w-sm" />
       </div>
 
-      <Table head={["Nhà cung cấp", "Điện thoại", "Địa chỉ", "Số máy đã nhập", "Công nợ", ""]}>
+      <Table head={["Nhà cung cấp", "Điện thoại", "Địa chỉ", "Số máy đã nhập", "Công nợ", "Người tạo", ""]}>
         {rows.map((s) => (
           <Tr key={s.id}>
             <Td>
@@ -137,6 +137,7 @@ function Inner() {
                 <span className="text-xs text-[var(--muted)]">Không nợ</span>
               )}
             </Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{s.createdByName ?? "—"}</Td>
             <Td>
               <div className="flex items-center justify-end gap-1">
                 <Button size="sm" variant="ghost" href={`/nha-cung-cap/${s.id}`}>

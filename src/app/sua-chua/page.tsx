@@ -125,7 +125,7 @@ function Inner() {
       </FilterBar>
 
       <Table
-        head={["Mã phiếu", "Máy", "Khách hàng", "Lỗi", "KTV nhận", "CP dự kiến", "Ngày nhận", "Trạng thái", ""]}
+        head={["Mã phiếu", "Máy", "Khách hàng", "Lỗi", "KTV nhận", "CP dự kiến", "Ngày nhận", "Trạng thái", "Người tạo", ""]}
         foot={
           rows.length > 0 ? (
             <tr>
@@ -135,6 +135,7 @@ function Inner() {
               <FootTd />
               <FootTd />
               <FootTd className="whitespace-nowrap">{formatVND(sumEst)}</FootTd>
+              <FootTd />
               <FootTd />
               <FootTd />
               <FootTd />
@@ -160,6 +161,7 @@ function Inner() {
             <Td>
               <RepairStatusBadge status={r.status} />
             </Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{r.createdByName ?? "—"}</Td>
             <Td>
               <div className="flex justify-end">
                 <Button size="sm" variant="ghost" onClick={() => openView(r)}>

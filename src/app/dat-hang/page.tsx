@@ -59,7 +59,7 @@ function Inner() {
         </Select>
       </div>
 
-      <Table head={["Mã đơn", "Khách hàng", "Máy (Mã SP)", "Giá bán", "Cọc", "Ngày", "Trạng thái", ""]}>
+      <Table head={["Mã đơn", "Khách hàng", "Máy (Mã SP)", "Giá bán", "Cọc", "Ngày", "Trạng thái", "Người tạo", ""]}>
         {rows.map((o) => (
           <Tr key={o.id}>
             <Td>
@@ -81,6 +81,7 @@ function Inner() {
             <Td>
               <OrderStatusBadge status={o.status} />
             </Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{o.createdByName ?? "—"}</Td>
             <Td>
               <div className="flex justify-end">
                 {can("dat-hang").remove && (

@@ -9,7 +9,7 @@ export const GET = handler(async () => {
 });
 
 export const POST = handler(async (req: Request) => {
-  await requirePermission("thu-may", "create");
+  const user = await requirePermission("thu-may", "create");
   const b = await req.json();
   if (!b.customerName || !b.model) throw new HttpError(400, "Nhập tên khách và model máy");
 
@@ -27,6 +27,7 @@ export const POST = handler(async (req: Request) => {
       config: String(b.config ?? "").trim(),
       condition: String(b.condition ?? "").trim(),
       price: Number(b.price) || 0,
+      createdByName: user.fullName,
     },
     include: { machine: true },
   });

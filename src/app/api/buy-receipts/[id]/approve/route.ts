@@ -6,7 +6,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 // Duyệt phiếu thu máy: tạo máy trong kho + ghi phiếu chi + chuyển trạng thái
 export const POST = handler(async (req: Request, { params }: Ctx) => {
-  await requirePermission("thu-may", "approve");
+  const user = await requirePermission("thu-may", "approve");
   const { id } = await params;
   const b = await req.json().catch(() => ({}));
 
@@ -36,6 +36,7 @@ export const POST = handler(async (req: Request, { params }: Ctx) => {
         purchasePrice: receipt.price,
         source: `Thu cũ - ${receipt.customerName}`,
         note: receipt.condition || null,
+        createdByName: user.fullName,
       },
     });
     const updated = await tx.buyReceipt.update({

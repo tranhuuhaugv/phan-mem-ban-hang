@@ -13,19 +13,20 @@ export const GET = handler(async () => {
     name: c.name,
     note: c.note ?? undefined,
     machineCount: machines.filter((m) => m.category === c.name).length,
+    createdByName: c.createdByName ?? undefined,
   }));
   return ok(data);
 });
 
 export const POST = handler(async (req: Request) => {
-  await requirePermission("danh-muc", "create");
+  const user = await requirePermission("danh-muc", "create");
   const b = await req.json();
   const name = String(b.name ?? "").trim();
   if (!name) throw new HttpError(400, "Nhập tên danh mục");
   const dup = await db.category.findUnique({ where: { name } });
   if (dup) throw new HttpError(409, "Danh mục này đã tồn tại");
   const row = await db.category.create({
-    data: { name, note: b.note ? String(b.note).trim() : null },
+    data: { name, note: b.note ? String(b.note).trim() : null, createdByName: user.fullName },
   });
   return ok(row, 201);
 });

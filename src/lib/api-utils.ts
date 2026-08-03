@@ -110,6 +110,7 @@ type MachineRow = {
   branch?: { name: string } | null;
   supplier?: { name: string } | null;
   createdAt: Date;
+  createdByName?: string | null;
 };
 
 export function serializeMachine(m: MachineRow) {
@@ -134,6 +135,7 @@ export function serializeMachine(m: MachineRow) {
     supplierId: m.supplierId ?? undefined,
     supplierName: m.supplier?.name ?? undefined,
     createdAt: m.createdAt.toISOString(),
+    createdByName: m.createdByName ?? undefined,
   };
 }
 
@@ -148,6 +150,7 @@ export function serializeBuyReceipt(b: {
   price: number;
   status: string;
   createdAt: Date;
+  createdByName?: string | null;
   machine?: { serial: string } | null;
 }) {
   return {
@@ -162,6 +165,7 @@ export function serializeBuyReceipt(b: {
     status: b.status,
     serial: b.machine?.serial,
     date: b.createdAt.toISOString(),
+    createdByName: b.createdByName ?? undefined,
   };
 }
 
@@ -174,6 +178,7 @@ export function serializeOrder(o: {
   deposit: number;
   status: string;
   createdAt: Date;
+  createdByName?: string | null;
   machine?: { serial: string; brand: string; model: string; cpu: string; ram: string; storage: string } | null;
 }) {
   return {
@@ -188,6 +193,7 @@ export function serializeOrder(o: {
     deposit: o.deposit,
     status: o.status,
     date: o.createdAt.toISOString(),
+    createdByName: o.createdByName ?? undefined,
   };
 }
 
@@ -205,6 +211,7 @@ export function serializeRepair(r: {
   returnDate: Date | null;
   note: string | null;
   status: string;
+  createdByName?: string | null;
   machine?: { serial: string; brand: string; model: string } | null;
   branch?: { name: string } | null;
 }) {
@@ -226,6 +233,7 @@ export function serializeRepair(r: {
     returnDate: r.returnDate?.toISOString(),
     note: r.note ?? undefined,
     status: r.status,
+    createdByName: r.createdByName ?? undefined,
   };
 }
 
@@ -239,6 +247,7 @@ export function serializeCashFlow(f: {
   category: string;
   partner: string | null;
   method?: string | null;
+  createdByName?: string | null;
 }) {
   return {
     id: f.id,
@@ -250,6 +259,7 @@ export function serializeCashFlow(f: {
     category: f.category,
     partner: f.partner ?? undefined,
     method: f.method ?? undefined,
+    createdByName: f.createdByName ?? undefined,
   };
 }
 
@@ -265,6 +275,7 @@ export function serializeInvoice(iv: {
   createdAt: Date;
   order?: { code: string } | null;
   repair?: { code: string } | null;
+  seller?: { fullName: string } | null;
   items?: { id: string; name: string; config: string; price: number; machine?: { serial: string } | null }[];
 }) {
   const paid = iv.paid ?? 0;
@@ -280,6 +291,7 @@ export function serializeInvoice(iv: {
     paid,
     debt: iv.total - paid,
     payMethod: iv.payMethod ?? undefined,
+    createdByName: iv.seller?.fullName ?? undefined,
     date: iv.createdAt.toISOString(),
     items: iv.items?.map((it) => ({
       id: it.id,

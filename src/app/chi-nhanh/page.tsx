@@ -91,7 +91,7 @@ function Inner() {
         <SearchInput value={q} onChange={setQ} placeholder="Tìm chi nhánh..." className="max-w-sm" />
       </div>
 
-      <Table head={["Chi nhánh", "Địa chỉ", "Điện thoại", "Số máy", ""]}>
+      <Table head={["Chi nhánh", "Địa chỉ", "Điện thoại", "Số máy", "Người tạo", ""]}>
         {rows.map((b) => (
           <Tr key={b.id}>
             <Td>
@@ -126,6 +126,7 @@ function Inner() {
             <Td>
               <Badge tone={b.machineCount > 0 ? "info" : "muted"}>{b.machineCount} máy</Badge>
             </Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{b.createdByName ?? "—"}</Td>
             <Td>
               <div className="flex items-center justify-end gap-1">
                 {perm.edit && (

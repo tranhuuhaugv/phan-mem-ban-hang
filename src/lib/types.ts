@@ -53,6 +53,7 @@ export interface Machine {
   supplierId?: string; // Nhà cung cấp nhập máy
   supplierName?: string;
   createdAt: string; // ngày nhập
+  createdByName?: string; // người tạo
 }
 
 // Chi nhánh / cửa hàng
@@ -63,6 +64,7 @@ export interface Branch {
   phone?: string;
   note?: string;
   machineCount: number; // số máy thuộc chi nhánh (chặn xoá)
+  createdByName?: string; // người tạo
 }
 
 // Nhà cung cấp — nguồn nhập hàng
@@ -74,6 +76,7 @@ export interface Supplier {
   note?: string;
   debt?: number; // công nợ phải trả NCC
   machineCount: number; // số máy nhập từ NCC này (chặn xoá)
+  createdByName?: string; // người tạo
 }
 
 // Danh mục = loại sản phẩm (Laptop / Macbook / Phụ kiện...)
@@ -82,6 +85,7 @@ export interface Category {
   name: string;
   note?: string;
   machineCount: number; // số máy thuộc danh mục này (chặn xoá)
+  createdByName?: string; // người tạo
 }
 
 // Thu máy — mua lại máy cũ từ khách
@@ -104,6 +108,7 @@ export interface BuyReceipt {
   status: BuyReceiptStatus;
   serial?: string; // Serial gán khi duyệt → đẩy vào kho
   date: string;
+  createdByName?: string; // người tạo
 }
 
 // Đặt hàng — đơn bán, gán Serial cụ thể
@@ -126,6 +131,7 @@ export interface Order {
   deposit: number; // Tiền cọc
   status: OrderStatus;
   date: string;
+  createdByName?: string; // người tạo
 }
 
 // Sửa chữa
@@ -153,6 +159,7 @@ export interface Repair {
   returnDate?: string; // Ngày trả
   note?: string; // Ghi chú / linh kiện đã thay
   status: RepairStatus;
+  createdByName?: string; // người tạo
 }
 
 // Thu - Chi
@@ -167,6 +174,7 @@ export interface CashFlow {
   category: string; // Loại chi phí / nguồn thu
   partner?: string; // Người nộp / nhận
   method?: string; // Hình thức: tien_mat | chuyen_khoan
+  createdByName?: string; // người tạo
 }
 
 export const PAY_METHOD_LABEL: Record<string, string> = {
@@ -188,6 +196,7 @@ export interface Invoice {
   debt?: number; // còn nợ (value - paid)
   payMethod?: string;
   date: string; // Ngày lập
+  createdByName?: string; // người tạo
 }
 
 // Bảo hành
@@ -209,6 +218,7 @@ export interface Customer {
   note?: string;
   totalSpent: number; // tổng đã mua
   orderCount: number;
+  createdByName?: string; // người tạo
 }
 
 // Phiếu nhập kho — 1 phiếu gồm nhiều máy
@@ -223,6 +233,7 @@ export interface StockInListItem {
   paid: number;
   debt: number;
   payMethod?: string;
+  createdByName?: string; // người tạo
 }
 
 export interface StockInItem {

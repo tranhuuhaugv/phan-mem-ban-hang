@@ -95,7 +95,7 @@ function Inner() {
       </FilterBar>
 
       <Table
-        head={["Mã phiếu", "Ngày", "Nhà cung cấp", "Chi nhánh", "Số máy", "Tổng tiền", "Đã trả", "Còn nợ"]}
+        head={["Mã phiếu", "Ngày", "Nhà cung cấp", "Chi nhánh", "Số máy", "Tổng tiền", "Đã trả", "Còn nợ", "Người tạo"]}
         foot={
           rows.length > 0 ? (
             <tr>
@@ -107,6 +107,7 @@ function Inner() {
               <FootTd className="whitespace-nowrap">{formatVND(sumTotal)}</FootTd>
               <FootTd className="whitespace-nowrap text-[var(--success)]">{formatVND(sumPaid)}</FootTd>
               <FootTd className="whitespace-nowrap text-[var(--danger)]">{sumDebt > 0 ? formatVND(sumDebt) : "—"}</FootTd>
+              <FootTd />
             </tr>
           ) : undefined
         }
@@ -131,6 +132,7 @@ function Inner() {
             <Td className="whitespace-nowrap font-medium">
               {r.debt > 0 ? <span className="text-[var(--danger)]">{formatVND(r.debt)}</span> : <span className="text-xs text-[var(--muted)]">Đủ</span>}
             </Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{r.createdByName ?? "—"}</Td>
           </Tr>
         ))}
         {rows.length === 0 && (

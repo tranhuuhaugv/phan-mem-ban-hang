@@ -43,3 +43,33 @@ export const GET = handler(async (_req: Request, { params }: Ctx) => {
     events,
   });
 });
+
+// Xoá toàn bộ hoá đơn của 1 người bán (chỉ admin — quyền hoa-don remove).
+// sellerId = "none" → xoá các hoá đơn không có người bán.
+// Đảo máy về kho / đơn về đặt cọc, xoá phiếu thu + bảo hành như xoá từng hoá đơn.
+export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
+  await requirePermission("hoa-don", "remove");
+  const { sellerId } = await params;
+  const where = sellerId === "none" ? { sellerId: null } : { sellerId };
+
+  const invoices = await db.invoice.findMany({ where, include: { items: true } });
+  if (invoices.length === 0) throw new HttpError(404, "Không có hoá đơn để xoá");
+
+  await db.$transaction(async (tx) => {
+    for (const inv of invoices) {
+      if (inv.orderId) {
+        const order = await tx.order.findUnique({ where: { id: inv.orderId } });
+        if (order?.machineId) await tx.machine.update({ where: { id: order.machineId }, data: { status: "dat_coc" } });
+        if (order) await tx.order.update({ where: { id: order.id }, data: { status: order.deposit > 0 ? "da_coc" : "cho_coc" } });
+      } else if (inv.kind !== "sua_chua") {
+        const machineIds = inv.items.map((i) => i.machineId).filter(Boolean) as string[];
+        if (machineIds.length) await tx.machine.updateMany({ where: { id: { in: machineIds } }, data: { status: "ton_kho" } });
+      }
+      await tx.cashFlow.deleteMany({ where: { invoiceId: inv.id } });
+      await tx.warranty.deleteMany({ where: { invoiceId: inv.id } });
+      await tx.invoice.delete({ where: { id: inv.id } });
+    }
+  });
+
+  return ok({ ok: true, deleted: invoices.length });
+});

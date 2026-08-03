@@ -14,12 +14,13 @@ export const GET = handler(async () => {
       note: c.note ?? undefined,
       totalSpent: c.orders.filter((o) => o.status === "da_giao").reduce((s, o) => s + o.sellPrice, 0),
       orderCount: c.orders.length,
+      createdByName: c.createdByName ?? undefined,
     })),
   );
 });
 
 export const POST = handler(async (req: Request) => {
-  await requirePermission("khach-hang", "create");
+  const user = await requirePermission("khach-hang", "create");
   const b = await req.json();
   if (!b.name || !b.phone) throw new HttpError(400, "Nhập tên và số điện thoại");
   const row = await db.customer.create({
@@ -28,6 +29,7 @@ export const POST = handler(async (req: Request) => {
       phone: String(b.phone).trim(),
       address: b.address ? String(b.address).trim() : null,
       note: b.note ? String(b.note).trim() : null,
+      createdByName: user.fullName,
     },
   });
   return ok(row, 201);

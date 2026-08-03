@@ -22,6 +22,7 @@ export const GET = handler(async () => {
       paid: r.paid,
       debt: r.debt,
       payMethod: r.payMethod ?? undefined,
+      createdByName: r.createdByName ?? undefined,
     })),
   );
 });
@@ -38,7 +39,7 @@ interface LineInput {
 
 // Tạo phiếu nhập gồm nhiều dòng máy
 export const POST = handler(async (req: Request) => {
-  await requirePermission("nhap-kho", "create");
+  const user = await requirePermission("nhap-kho", "create");
   const b = await req.json();
 
   const rawItems: LineInput[] = Array.isArray(b.items) ? b.items : [];
@@ -104,7 +105,7 @@ export const POST = handler(async (req: Request) => {
     let sn = lastM ? parseInt(lastM.serial.slice(2), 10) || 0 : 0;
 
     const created = await tx.stockIn.create({
-      data: { code, total, paid, debt: unpaid, payMethod, note, branchId, supplierId, ...(createdAt ? { date: createdAt } : {}) },
+      data: { code, total, paid, debt: unpaid, payMethod, note, branchId, supplierId, createdByName: user.fullName, ...(createdAt ? { date: createdAt } : {}) },
     });
 
     for (const it of items) {
@@ -130,6 +131,7 @@ export const POST = handler(async (req: Request) => {
             salePrice: it.salePrice,
             source,
             note: it.description,
+            createdByName: user.fullName,
             branchId,
             supplierId,
             stockInId: created.id,

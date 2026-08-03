@@ -13,7 +13,7 @@ export const GET = handler(async () => {
 });
 
 export const POST = handler(async (req: Request) => {
-  await requirePermission("kho", "create");
+  const user = await requirePermission("kho", "create");
   const b = await req.json();
 
   const serial: string = String(b.serial ?? "").trim().toUpperCase() || (await nextCode("machine", "SP", 4));
@@ -28,6 +28,7 @@ export const POST = handler(async (req: Request) => {
   const row = await db.machine.create({
     data: {
       serial,
+      createdByName: user.fullName,
       brand: String(b.brand ?? "").trim(),
       model,
       cpu: String(b.cpu ?? "").trim(),

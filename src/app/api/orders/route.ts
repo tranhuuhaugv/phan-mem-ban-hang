@@ -9,7 +9,7 @@ export const GET = handler(async () => {
 });
 
 export const POST = handler(async (req: Request) => {
-  await requirePermission("dat-hang", "create");
+  const user = await requirePermission("dat-hang", "create");
   const b = await req.json();
   if (!b.customerName) throw new HttpError(400, "Nhập tên khách hàng");
   if (!b.serial) throw new HttpError(400, "Chọn máy (Mã SP) để bán");
@@ -44,6 +44,7 @@ export const POST = handler(async (req: Request) => {
         status: deposit > 0 ? "da_coc" : "cho_coc",
         machineId: machine.id,
         customerId,
+        createdByName: user.fullName,
       },
       include: { machine: true },
     });

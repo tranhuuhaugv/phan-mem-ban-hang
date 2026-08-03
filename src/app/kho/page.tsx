@@ -117,7 +117,7 @@ export default function KhoPage() {
         </Select>
       </div>
 
-      <Table head={["Mã SP", "Tên sản phẩm", "Danh mục", "Chi nhánh", "Cấu hình", "Giá nhập", "Ngày nhập", "Trạng thái", ""]}>
+      <Table head={["Mã SP", "Tên sản phẩm", "Danh mục", "Chi nhánh", "Cấu hình", "Giá nhập", "Ngày nhập", "Trạng thái", "Người tạo", ""]}>
         {rows.map((m) => (
           <Tr key={m.id}>
             <Td>
@@ -151,6 +151,7 @@ export default function KhoPage() {
             <Td>
               <MachineStatusBadge status={m.status} />
             </Td>
+            <Td className="whitespace-nowrap text-xs text-[var(--muted)]">{m.createdByName ?? "—"}</Td>
             <Td>
               <div className="flex items-center justify-end gap-1">
                 <Button size="sm" variant="ghost" href={`/kho/${m.serial}`}>

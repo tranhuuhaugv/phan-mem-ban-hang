@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Trophy } from "lucide-react";
+import { Trophy, Trash2 } from "lucide-react";
 import { AccessGuard } from "@/components/parts";
 import {
   PageHeader,
@@ -11,12 +11,16 @@ import {
   Td,
   FootTd,
   Badge,
+  Button,
   FilterBar,
   DateRange,
   ClearFilterButton,
   EmptyState,
 } from "@/components/ui";
-import { useApi } from "@/lib/api";
+import { ConfirmDialog } from "@/components/modal";
+import { useToast } from "@/components/toast";
+import { useRole } from "@/components/role-context";
+import { useApi, apiDelete } from "@/lib/api";
 import { formatVND } from "@/lib/format";
 import { ROLE_LABEL, type Role } from "@/lib/types";
 
@@ -44,14 +48,18 @@ export default function Page() {
 }
 
 function Inner() {
+  const { can } = useRole();
+  const toast = useToast();
+  const canDelete = can("hoa-don").remove;
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [del, setDel] = useState<SellerRow | null>(null);
 
   const params = new URLSearchParams();
   if (from) params.set("from", from);
   if (to) params.set("to", to);
   const qs = params.toString();
-  const { data, loading } = useApi<SellerRow[]>(`/api/reports/sales-by-seller${qs ? `?${qs}` : ""}`);
+  const { data, loading, reload } = useApi<SellerRow[]>(`/api/reports/sales-by-seller${qs ? `?${qs}` : ""}`);
   const rows = data ?? [];
 
   const totalCount = rows.reduce((s, r) => s + r.count, 0);
@@ -77,7 +85,7 @@ function Inner() {
         <EmptyState text={loading ? "Đang tải dữ liệu..." : "Chưa có hoá đơn nào trong kỳ"} />
       ) : (
         <Table
-          head={["#", "Người bán", "Vai trò", "Số hoá đơn", "Doanh thu", "Đã thu"]}
+          head={["#", "Người bán", "Vai trò", "Số hoá đơn", "Doanh thu", "Đã thu", ...(canDelete ? [""] : [])]}
           foot={
             <tr>
               <FootTd />
@@ -86,6 +94,7 @@ function Inner() {
               <FootTd>{totalCount}</FootTd>
               <FootTd className="whitespace-nowrap">{formatVND(totalRev)}</FootTd>
               <FootTd className="whitespace-nowrap text-[var(--success)]">{formatVND(totalPaid)}</FootTd>
+              {canDelete && <FootTd />}
             </tr>
           }
         >
@@ -107,10 +116,42 @@ function Inner() {
               <Td className="font-semibold">{r.count}</Td>
               <Td className="whitespace-nowrap font-medium">{formatVND(r.revenue)}</Td>
               <Td className="whitespace-nowrap text-sm text-[var(--success)]">{formatVND(r.paid)}</Td>
+              {canDelete && (
+                <Td>
+                  <div className="flex justify-end">
+                    <Button size="sm" variant="ghost" className="text-[var(--danger)]" onClick={() => setDel(r)}>
+                      <Trash2 size={15} />
+                    </Button>
+                  </div>
+                </Td>
+              )}
             </Tr>
           ))}
         </Table>
       )}
+
+      <ConfirmDialog
+        open={!!del}
+        onClose={() => setDel(null)}
+        onConfirm={async () => {
+          if (!del) return;
+          try {
+            const res = await apiDelete<{ deleted: number }>(`/api/reports/sales-by-seller/${del.sellerId ?? "none"}`);
+            toast(`Đã xoá ${res.deleted} hoá đơn của ${del.name}`);
+            reload();
+          } catch (e) {
+            toast(e instanceof Error ? e.message : "Xoá thất bại", "warning");
+          }
+        }}
+        title="Xoá toàn bộ hoá đơn của người bán"
+        message={
+          del
+            ? `Xoá TẤT CẢ ${del.count} hoá đơn (doanh thu ${formatVND(del.revenue)}) do ${del.name} tạo? Máy sẽ trả về kho, phiếu thu và bảo hành liên quan cũng bị xoá. Không thể hoàn tác.`
+            : ""
+        }
+        confirmText="Xoá tất cả"
+        danger
+      />
     </div>
   );
 }

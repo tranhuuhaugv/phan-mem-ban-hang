@@ -9,7 +9,7 @@ export const GET = handler(async () => {
 });
 
 export const POST = handler(async (req: Request) => {
-  await requirePermission("sua-chua", "create");
+  const user = await requirePermission("sua-chua", "create");
   const b = await req.json();
   if (!b.errorDesc) throw new HttpError(400, "Nhập mô tả lỗi");
 
@@ -48,6 +48,7 @@ export const POST = handler(async (req: Request) => {
     const repair = await tx.repair.create({
       data: {
         code,
+        createdByName: user.fullName,
         machineName,
         customerName,
         customerPhone,
