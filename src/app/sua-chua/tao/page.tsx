@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Search, Plus, RefreshCw, Wallet, CreditCard, Landmark } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard } from "@/components/parts";
 import { CustomerField } from "@/components/customer-field";
 import { Button, PageHeader, Field, Input, Textarea, Select, MoneyInput } from "@/components/ui";
 import { useToast } from "@/components/toast";
-import { useApi, apiPost } from "@/lib/api";
+import { useApi, apiPost, apiPatch } from "@/lib/api";
 import { QuickAddMachine } from "@/components/quick-add-machine";
 import { formatVND } from "@/lib/format";
 import type { Machine, Branch, Repair } from "@/lib/types";
@@ -25,6 +25,9 @@ function Inner() {
   const toast = useToast();
   const { data, reload: reloadMachines } = useApi<Machine[]>("/api/machines");
   const { data: branches } = useApi<Branch[]>("/api/branches");
+  const [editId, setEditId] = useState("");
+  const { data: editRepairs } = useApi<Repair[]>(editId ? "/api/repairs" : null);
+  const editRepair = editId ? (editRepairs ?? []).find((r) => r.id === editId) : undefined;
   const inStock = (data ?? []).filter((m) => m.status === "ton_kho" || m.status === "bao_hanh");
 
   const [branchId, setBranchId] = useState("");
@@ -44,6 +47,24 @@ function Inner() {
   const [amountPaid, setAmountPaid] = useState("");
   const [payMethod, setPayMethod] = useState<"tien_mat" | "the" | "chuyen_khoan">("tien_mat");
   const [busy, setBusy] = useState(false);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const e = new URLSearchParams(window.location.search).get("edit");
+    if (e) setEditId(e);
+  }, []);
+  useEffect(() => {
+    if (!editRepair) return;
+    setSerial(editRepair.inStock ? editRepair.serial ?? "" : "");
+    setModel(editRepair.model ?? "");
+    setCustomerName(editRepair.customerName ?? "");
+    setCustomerPhone(editRepair.customerPhone ?? "");
+    setErrorDesc(editRepair.errorDesc ?? "");
+    setTechnician(editRepair.technician ?? "");
+    setCost(String(editRepair.estCost ?? ""));
+    setBranchId((branches ?? []).find((b) => b.name === editRepair.branchName)?.id ?? "");
+  }, [editRepair, branches]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const nameOf = (m: Machine) => [m.brand, m.model].filter(Boolean).join(" ");
   const picked = inStock.find((m) => m.serial === serial);
@@ -81,6 +102,28 @@ function Inner() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (editId) {
+      if (!errorDesc.trim()) return toast("Nhập Nội dung sửa", "warning");
+      setBusy(true);
+      try {
+        await apiPatch(`/api/repairs/${editId}`, {
+          ...(editRepair?.inStock ? {} : { machineName: model.trim() }),
+          customerName,
+          customerPhone,
+          errorDesc,
+          technician,
+          estCost: Number(cost) || 0,
+          branchId: branchId || null,
+        });
+        toast("Đã cập nhật phiếu sửa");
+        router.push("/sua-chua");
+      } catch (err) {
+        toast(err instanceof Error ? err.message : "Cập nhật thất bại", "warning");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     const isKho = !!serial;
     if (!errorDesc.trim()) return toast("Nhập Nội dung sửa", "warning");
     if (!isKho && !model.trim()) return toast("Chọn máy trong kho hoặc nhập Mặt hàng cần sửa", "warning");
@@ -109,7 +152,10 @@ function Inner() {
   return (
     <div>
       <BackLink href="/sua-chua">Về danh sách phiếu</BackLink>
-      <PageHeader title="Phiếu sửa chữa" subtitle="Nhận máy sửa — khách lấy liền thì thu tiền ngay, không thì để Đang sửa và thu khi khách tới lấy" />
+      <PageHeader
+        title={editId ? `Sửa phiếu ${editRepair?.code ?? ""}` : "Phiếu sửa chữa"}
+        subtitle={editId ? "Sửa thông tin phiếu: máy, khách, nội dung lỗi, KTV, chi phí dự kiến, chi nhánh" : "Nhận máy sửa — khách lấy liền thì thu tiền ngay, không thì để Đang sửa và thu khi khách tới lấy"}
+      />
 
       <form onSubmit={submit} className="space-y-3">
         <SectionCard>
@@ -135,7 +181,17 @@ function Inner() {
             </Field>
 
             <Field label="Mặt hàng (máy cần sửa)" hint="Tìm máy trong kho; không chọn thì mặc định là máy khách (nhập tên ở ô Model)">
-              {serial && picked ? (
+              {editId ? (
+                <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-sm">
+                  {editRepair?.inStock ? (
+                    <span>
+                      <span className="font-medium">{model}</span> <span className="font-mono text-xs text-[var(--muted)]">· {serial}</span>
+                    </span>
+                  ) : (
+                    <span className="text-[var(--muted)]">Máy khách — sửa tên ở ô Model bên dưới</span>
+                  )}
+                </div>
+              ) : serial && picked ? (
                 <div className="flex items-center justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2">
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium">{nameOf(picked)}</span>
@@ -191,10 +247,17 @@ function Inner() {
             <Field label="Nội dung sửa *">
               <Textarea rows={3} value={errorDesc} onChange={(e) => setErrorDesc(e.target.value)} placeholder="VD: Máy không lên nguồn, thay pin, vệ sinh máy..." />
             </Field>
+
+            {editId && (
+              <Field label="Chi phí dự kiến (₫)">
+                <MoneyInput value={cost} onChange={setCost} placeholder="0" />
+              </Field>
+            )}
           </div>
         </SectionCard>
 
         {/* Khách lấy liền → thanh toán */}
+        {!editId && (
         <SectionCard>
           <label className="flex items-center gap-2 text-sm font-medium">
             <input type="checkbox" checked={payNow} onChange={(e) => setPayNow(e.target.checked)} className="h-4 w-4 accent-[var(--primary)]" />
@@ -263,13 +326,16 @@ function Inner() {
             <p className="mt-2 text-xs text-[var(--muted)]">Bỏ trống ô này → phiếu để trạng thái “Đang sửa”, thu tiền khi khách tới lấy.</p>
           )}
         </SectionCard>
+        )}
 
         <div className="flex items-center justify-end gap-2">
-          <Button type="button" variant="outline" onClick={refresh}>
-            <RefreshCw size={16} /> Refresh
-          </Button>
+          {!editId && (
+            <Button type="button" variant="outline" onClick={refresh}>
+              <RefreshCw size={16} /> Refresh
+            </Button>
+          )}
           <Button type="submit" disabled={busy}>
-            <Save size={16} /> {busy ? "Đang lưu..." : "Lưu"}
+            <Save size={16} /> {busy ? "Đang lưu..." : editId ? "Lưu thay đổi" : "Lưu"}
           </Button>
         </div>
       </form>

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Save } from "lucide-react";
 import { AccessGuard, BackLink, SectionCard, DetailRow } from "@/components/parts";
 import { CustomerField } from "@/components/customer-field";
 import { Button, PageHeader, Field, Select, MoneyInput } from "@/components/ui";
 import { useToast } from "@/components/toast";
-import { useApi, apiPost } from "@/lib/api";
+import { useApi, apiPost, apiPatch } from "@/lib/api";
 import type { Machine, Order } from "@/lib/types";
 import { formatVND } from "@/lib/format";
 
@@ -26,11 +26,51 @@ function Inner() {
   const available = (data ?? []).filter((m) => m.status === "ton_kho");
   const [serial, setSerial] = useState("");
   const [f, setF] = useState({ customerName: "", phone: "", sellPrice: "", deposit: "" });
+  const [editId, setEditId] = useState("");
   const [busy, setBusy] = useState(false);
-  const picked = available.find((m) => m.serial === serial);
+  const picked = (data ?? []).find((m) => m.serial === serial);
+
+  const { data: editOrder } = useApi<Order>(editId ? `/api/orders/${editId}` : null);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const e = new URLSearchParams(window.location.search).get("edit");
+    if (e) setEditId(e);
+  }, []);
+  useEffect(() => {
+    if (!editOrder) return;
+    setSerial(editOrder.serial ?? "");
+    setF({
+      customerName: editOrder.customerName ?? "",
+      phone: editOrder.phone ?? "",
+      sellPrice: String(editOrder.sellPrice ?? ""),
+      deposit: String(editOrder.deposit ?? ""),
+    });
+  }, [editOrder]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (editId) {
+      setBusy(true);
+      try {
+        const machineId = (data ?? []).find((m) => m.serial === serial)?.id ?? "";
+        await apiPatch(`/api/orders/${editId}`, {
+          customerName: f.customerName,
+          phone: f.phone,
+          machineId,
+          sellPrice: Number(f.sellPrice) || 0,
+          deposit: Number(f.deposit) || 0,
+        });
+        toast("Đã cập nhật đơn hàng");
+        router.push(`/dat-hang/${editId}`);
+      } catch (err) {
+        toast(err instanceof Error ? err.message : "Cập nhật thất bại", "warning");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     if (!serial) {
       toast("Vui lòng chọn máy (Mã SP) để bán", "warning");
       return;
@@ -56,7 +96,10 @@ function Inner() {
   return (
     <div>
       <BackLink href="/dat-hang">Về danh sách đơn</BackLink>
-      <PageHeader title="Tạo đơn đặt hàng" subtitle="Chỉ chọn được máy đang Tồn kho — máy sẽ được giữ (Đặt cọc), không bán trùng" />
+      <PageHeader
+        title={editId ? `Sửa đơn ${editOrder?.code ?? ""}` : "Tạo đơn đặt hàng"}
+        subtitle={editId ? "Đổi máy/khách/giá — lưu lại sẽ đảo trạng thái máy tương ứng" : "Chỉ chọn được máy đang Tồn kho — máy sẽ được giữ (Đặt cọc), không bán trùng"}
+      />
       <form onSubmit={submit} className="space-y-3">
         <div className="grid items-start gap-3 lg:grid-cols-3">
           <SectionCard title="Khách hàng">
@@ -72,6 +115,11 @@ function Inner() {
             <Field label="Chọn máy tồn kho (Mã SP) *" hint={`${available.length} máy đang tồn kho có thể bán`}>
               <Select value={serial} onChange={(e) => setSerial(e.target.value)}>
                 <option value="">— Chọn máy —</option>
+                {editId && editOrder?.serial && !available.some((m) => m.serial === editOrder.serial) && (
+                  <option value={editOrder.serial}>
+                    {editOrder.serial} · {editOrder.model} (đang gán)
+                  </option>
+                )}
                 {available.map((m) => (
                   <option key={m.id} value={m.serial}>
                     {m.serial} · {m.brand} {m.model} ({m.cpu}/{m.ram})
@@ -109,7 +157,7 @@ function Inner() {
             Huỷ
           </Button>
           <Button type="submit" disabled={busy}>
-            <Save size={16} /> {busy ? "Đang tạo..." : "Tạo đơn"}
+            <Save size={16} /> {busy ? "Đang lưu..." : editId ? "Lưu thay đổi" : "Tạo đơn"}
           </Button>
         </div>
       </form>

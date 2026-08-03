@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Eye, CheckCircle2, ReceiptText, Wallet, CreditCard, Landmark, Trash2, Pencil, Save } from "lucide-react";
+import Link from "next/link";
+import { Plus, Eye, CheckCircle2, ReceiptText, Wallet, CreditCard, Landmark, Trash2, Pencil } from "lucide-react";
 import { AccessGuard, DetailRow } from "@/components/parts";
-import { Button, PageHeader, Table, Tr, Td, FootTd, SearchInput, MoneyInput, Input, Select, Field, Textarea, FilterBar, FilterSelect, DateRange, ClearFilterButton, inDateRange } from "@/components/ui";
+import { Button, PageHeader, Table, Tr, Td, FootTd, SearchInput, MoneyInput, Field, Textarea, FilterBar, FilterSelect, DateRange, ClearFilterButton, inDateRange } from "@/components/ui";
 import { Modal, ConfirmDialog } from "@/components/modal";
 import { RepairStatusBadge } from "@/components/status";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
 import { useApi, apiPatch, apiDelete } from "@/lib/api";
-import { REPAIR_STATUS_LABEL, type Repair, type RepairStatus, type Branch } from "@/lib/types";
+import { REPAIR_STATUS_LABEL, type Repair, type RepairStatus } from "@/lib/types";
 import { formatVND, formatDateTime } from "@/lib/format";
 
 export default function Page() {
@@ -24,12 +25,9 @@ function Inner() {
   const { can } = useRole();
   const toast = useToast();
   const { data, loading, reload } = useApi<Repair[]>("/api/repairs");
-  const { data: branchList } = useApi<Branch[]>("/api/branches");
   const [status, setStatus] = useState<RepairStatus | "all">("all");
   const [branch, setBranch] = useState("all");
   const [view, setView] = useState<Repair | null>(null);
-  const [editRepair, setEditRepair] = useState<Repair | null>(null);
-  const [ef, setEf] = useState({ machineName: "", customerName: "", customerPhone: "", errorDesc: "", technician: "", estCost: "", branchId: "", note: "" });
   const [actualCost, setActualCost] = useState("");
   const [note, setNote] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
@@ -50,44 +48,6 @@ function Inner() {
       .includes(q.trim().toLowerCase());
   });
   const sumEst = rows.reduce((s, r) => s + r.estCost, 0);
-
-  const openEditRepair = (r: Repair) => {
-    const bid = (branchList ?? []).find((b) => b.name === r.branchName)?.id ?? "";
-    setEf({
-      machineName: r.inStock ? "" : (r.model ?? ""),
-      customerName: r.customerName ?? "",
-      customerPhone: r.customerPhone ?? "",
-      errorDesc: r.errorDesc ?? "",
-      technician: r.technician ?? "",
-      estCost: String(r.estCost ?? ""),
-      branchId: bid,
-      note: r.note ?? "",
-    });
-    setEditRepair(r);
-  };
-  const saveEditRepair = async () => {
-    if (!editRepair) return;
-    setBusy(true);
-    try {
-      await apiPatch(`/api/repairs/${editRepair.id}`, {
-        ...(editRepair.inStock ? {} : { machineName: ef.machineName.trim() }),
-        customerName: ef.customerName.trim(),
-        customerPhone: ef.customerPhone.trim(),
-        errorDesc: ef.errorDesc.trim(),
-        technician: ef.technician.trim(),
-        estCost: Number(ef.estCost) || 0,
-        branchId: ef.branchId || null,
-        note: ef.note.trim() || null,
-      });
-      toast("Đã cập nhật phiếu sửa");
-      setEditRepair(null);
-      reload();
-    } catch (e) {
-      toast(e instanceof Error ? e.message : "Cập nhật thất bại", "warning");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const openView = (r: Repair) => {
     setView(r);
@@ -188,9 +148,9 @@ function Inner() {
           <Tr key={r.id}>
             <Td className="font-mono text-xs font-medium">
               {can("sua-chua").edit ? (
-                <button type="button" onClick={() => openEditRepair(r)} className="text-[var(--primary)] hover:underline">
+                <Link href={`/sua-chua/tao?edit=${r.id}`} className="text-[var(--primary)] hover:underline">
                   {r.code}
-                </button>
+                </Link>
               ) : (
                 r.code
               )}
@@ -240,7 +200,7 @@ function Inner() {
                 Đóng
               </Button>
               {can("sua-chua").edit && (
-                <Button variant="outline" onClick={() => { openEditRepair(view); setView(null); }}>
+                <Button variant="outline" href={`/sua-chua/tao?edit=${view.id}`}>
                   <Pencil size={15} /> Sửa
                 </Button>
               )}
@@ -328,68 +288,6 @@ function Inner() {
                 </div>
               </div>
             )}
-          </div>
-        )}
-      </Modal>
-
-      <Modal
-        open={!!editRepair}
-        onClose={() => setEditRepair(null)}
-        title={`Sửa phiếu ${editRepair?.code ?? ""}`}
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setEditRepair(null)}>
-              Huỷ
-            </Button>
-            <Button onClick={saveEditRepair} disabled={busy}>
-              <Save size={16} /> {busy ? "Đang lưu..." : "Lưu"}
-            </Button>
-          </>
-        }
-      >
-        {editRepair && (
-          <div className="grid grid-cols-2 gap-3">
-            {!editRepair.inStock && (
-              <div className="col-span-2">
-                <Field label="Tên máy (máy khách)">
-                  <Input value={ef.machineName} onChange={(e) => setEf((s) => ({ ...s, machineName: e.target.value }))} />
-                </Field>
-              </div>
-            )}
-            <Field label="Khách hàng">
-              <Input value={ef.customerName} onChange={(e) => setEf((s) => ({ ...s, customerName: e.target.value }))} />
-            </Field>
-            <Field label="SĐT">
-              <Input value={ef.customerPhone} onChange={(e) => setEf((s) => ({ ...s, customerPhone: e.target.value }))} />
-            </Field>
-            <div className="col-span-2">
-              <Field label="Mô tả lỗi">
-                <Textarea rows={2} value={ef.errorDesc} onChange={(e) => setEf((s) => ({ ...s, errorDesc: e.target.value }))} />
-              </Field>
-            </div>
-            <Field label="KTV phụ trách">
-              <Input value={ef.technician} onChange={(e) => setEf((s) => ({ ...s, technician: e.target.value }))} />
-            </Field>
-            <Field label="Chi phí dự kiến (₫)">
-              <MoneyInput value={ef.estCost} onChange={(v) => setEf((s) => ({ ...s, estCost: v }))} />
-            </Field>
-            <div className="col-span-2">
-              <Field label="Chi nhánh">
-                <Select value={ef.branchId} onChange={(e) => setEf((s) => ({ ...s, branchId: e.target.value }))}>
-                  <option value="">— Không —</option>
-                  {(branchList ?? []).map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-            <div className="col-span-2">
-              <Field label="Ghi chú / linh kiện">
-                <Textarea rows={2} value={ef.note} onChange={(e) => setEf((s) => ({ ...s, note: e.target.value }))} />
-              </Field>
-            </div>
           </div>
         )}
       </Modal>

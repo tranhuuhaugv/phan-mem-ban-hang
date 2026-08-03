@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Package, Wallet, CreditCard, Landmark, Trash2, Pencil, Save, Plus, X } from "lucide-react";
 import { AccessGuard, BackLink, DetailRow, SectionCard } from "@/components/parts";
 import { PageHeader, Card, Badge, Table, Tr, Td, Button, Field, Input, MoneyInput, Textarea } from "@/components/ui";
-import { ConfirmDialog, Modal } from "@/components/modal";
+import { ConfirmDialog } from "@/components/modal";
 import { MachineStatusBadge } from "@/components/status";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
@@ -220,22 +220,9 @@ function Inner({ id }: { id: string }) {
         </SectionCard>
       </div>
 
-      <Modal
-        open={edit}
-        onClose={() => setEdit(false)}
-        title={`Sửa phiếu nhập ${r.code}`}
-        wide
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setEdit(false)}>
-              Huỷ
-            </Button>
-            <Button onClick={saveEdit} disabled={busy}>
-              <Save size={16} /> {busy ? "Đang lưu..." : "Lưu thay đổi"}
-            </Button>
-          </>
-        }
-      >
+      {edit && (
+      <div className="mt-4">
+      <SectionCard title={`Sửa phiếu nhập ${r.code}`}>
         <div className="space-y-3">
           <p className="text-xs text-[var(--muted)]">
             Sửa giá/tên máy, xoá máy còn tồn kho, thêm máy mới. Tổng tiền & công nợ NCC sẽ được tính lại.
@@ -295,8 +282,18 @@ function Inner({ id }: { id: string }) {
             <span className="text-[var(--muted)]">Tổng tiền mới</span>
             <span className="font-semibold">{formatVND(editTotal)}</span>
           </div>
+          <div className="flex justify-end gap-2 border-t border-[var(--border)] pt-3">
+            <Button variant="outline" onClick={() => setEdit(false)}>
+              Huỷ
+            </Button>
+            <Button onClick={saveEdit} disabled={busy}>
+              <Save size={16} /> {busy ? "Đang lưu..." : "Lưu thay đổi"}
+            </Button>
+          </div>
         </div>
-      </Modal>
+      </SectionCard>
+      </div>
+      )}
 
       <ConfirmDialog
         open={del}
