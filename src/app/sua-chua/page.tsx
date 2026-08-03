@@ -186,7 +186,15 @@ function Inner() {
       >
         {rows.map((r) => (
           <Tr key={r.id}>
-            <Td className="font-mono text-xs font-medium">{r.code}</Td>
+            <Td className="font-mono text-xs font-medium">
+              {can("sua-chua").edit ? (
+                <button type="button" onClick={() => openEditRepair(r)} className="text-[var(--primary)] hover:underline">
+                  {r.code}
+                </button>
+              ) : (
+                r.code
+              )}
+            </Td>
             <Td>
               <div className="font-medium">{r.model || "—"}</div>
               <div className="font-mono text-xs text-[var(--muted)]">{r.inStock ? r.serial : "Máy khách"}</div>

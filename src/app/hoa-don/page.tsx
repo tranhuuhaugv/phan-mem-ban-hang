@@ -95,7 +95,11 @@ function Inner() {
         >
           {rows.map((iv) => (
             <Tr key={iv.id}>
-              <Td className="font-mono text-xs font-medium">{iv.code}</Td>
+              <Td className="font-mono text-xs font-medium">
+                <Link href={`/hoa-don/${iv.id}?edit=1`} className="text-[var(--primary)] hover:underline">
+                  {iv.code}
+                </Link>
+              </Td>
               <Td>
                 {iv.kind === "sua_chua" ? (
                   <Badge tone="warning">Sửa chữa {iv.repairCode}</Badge>

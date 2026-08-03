@@ -115,7 +115,7 @@ function Inner() {
         {rows.map((r) => (
           <Tr key={r.id}>
             <Td>
-              <Link href={`/kho/phieu-nhap/${r.id}`} className="flex items-center gap-1.5 font-mono text-xs font-semibold text-[var(--primary)] hover:underline">
+              <Link href={`/kho/phieu-nhap/${r.id}?edit=1`} className="flex items-center gap-1.5 font-mono text-xs font-semibold text-[var(--primary)] hover:underline">
                 <FileText size={13} /> {r.code}
               </Link>
             </Td>

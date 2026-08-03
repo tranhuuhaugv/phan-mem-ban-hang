@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { Printer, ShieldCheck, Loader2, HandCoins, Wallet, CreditCard, Landmark, Pencil, Save, Trash2 } from "lucide-react";
 import { AccessGuard, BackLink } from "@/components/parts";
 import { Button, PageHeader, Card, MoneyInput, Field, Input, Select } from "@/components/ui";
@@ -90,6 +91,17 @@ function Inner({ id }: { id: string }) {
     }
   };
   const editTotal = editItems.reduce((s, i) => s + (Number(i.price) || 0), 0);
+
+  // Mở thẳng form Sửa khi vào từ danh sách (?edit=1)
+  const searchParams = useSearchParams();
+  const didAutoEdit = useRef(false);
+  useEffect(() => {
+    if (!didAutoEdit.current && iv && searchParams.get("edit") === "1" && can("hoa-don").edit) {
+      didAutoEdit.current = true;
+      openEditInvoice();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [iv, searchParams]);
 
   const payTotal = (["tien_mat", "the", "chuyen_khoan"] as const).reduce((s, m) => s + (Number(pay3[m]) || 0), 0);
 

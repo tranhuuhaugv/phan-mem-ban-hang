@@ -1,8 +1,8 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Package, Wallet, CreditCard, Landmark, Trash2, Pencil, Save, Plus, X } from "lucide-react";
 import { AccessGuard, BackLink, DetailRow, SectionCard } from "@/components/parts";
 import { PageHeader, Card, Badge, Table, Tr, Td, Button, Field, Input, MoneyInput, Textarea } from "@/components/ui";
@@ -91,6 +91,16 @@ function Inner({ id }: { id: string }) {
       setBusy(false);
     }
   };
+
+  const searchParams = useSearchParams();
+  const didAutoEdit = useRef(false);
+  useEffect(() => {
+    if (!didAutoEdit.current && data && searchParams.get("edit") === "1" && can("nhap-kho").edit) {
+      didAutoEdit.current = true;
+      openEdit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, searchParams]);
 
   if (loading) {
     return (

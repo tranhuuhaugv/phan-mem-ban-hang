@@ -63,7 +63,7 @@ function Inner() {
         {rows.map((o) => (
           <Tr key={o.id}>
             <Td>
-              <Link href={`/dat-hang/${o.id}`} className="font-mono text-xs font-medium text-[var(--primary)] hover:underline">
+              <Link href={`/dat-hang/${o.id}?edit=1`} className="font-mono text-xs font-medium text-[var(--primary)] hover:underline">
                 {o.code}
               </Link>
             </Td>

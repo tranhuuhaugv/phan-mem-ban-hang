@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { AccessGuard, BackLink, DetailRow, SectionCard } from "@/components/parts";
 import { PageHeader, Card, Button, Field, Input, Select, MoneyInput } from "@/components/ui";
 import { Modal } from "@/components/modal";
@@ -79,6 +80,16 @@ function Inner({ id }: { id: string }) {
       setBusy(false);
     }
   };
+
+  const searchParams = useSearchParams();
+  const didAutoEdit = useRef(false);
+  useEffect(() => {
+    if (!didAutoEdit.current && order && searchParams.get("edit") === "1" && canEdit) {
+      didAutoEdit.current = true;
+      openEdit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order, searchParams]);
 
   if (loading) {
     return (
