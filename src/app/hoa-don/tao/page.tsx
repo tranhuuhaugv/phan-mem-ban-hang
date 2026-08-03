@@ -27,6 +27,7 @@ interface EditInvoice {
   code: string;
   customerName: string;
   phone: string;
+  paid: number;
   items: { id: string; serial: string; name: string; config: string; price: number }[];
 }
 
@@ -112,7 +113,7 @@ function Inner() {
     if (!m) return;
     setItems((s) => [
       ...s,
-      { serial: m.serial, name: `${m.brand} ${m.model}`, config: `${m.cpu} · ${m.ram} · ${m.storage}`, price: 0 },
+      { serial: m.serial, name: `${m.brand} ${m.model}`, config: [m.cpu, m.ram, m.storage].filter(Boolean).join(" · "), price: 0 },
     ]);
     setQuery("");
   };
@@ -142,6 +143,7 @@ function Inner() {
           items: items.map((i) => ({ serial: i.serial, price: i.price })),
           customerName,
           phone,
+          payments: payLines.length ? payLines : undefined,
         });
         toast("Đã cập nhật hoá đơn");
         router.push(`/hoa-don/${editId}`);
@@ -388,18 +390,21 @@ function Inner() {
           </div>
         )}
 
-        {mode === "direct" && !editId && (
+        {mode === "direct" && (
           <SectionCard title="Thanh toán">
             {(() => {
+              const alreadyPaid = editId ? editInv?.paid ?? 0 : 0;
               const isEmpty = payLines.length === 0;
-              const paidShown = isEmpty ? total : Math.min(paidTotal, total);
+              const paidShown = editId ? Math.min(alreadyPaid + paidTotal, total) : isEmpty ? total : Math.min(paidTotal, total);
               const debtShown = Math.max(0, total - paidShown);
-              const remain = Math.max(0, total - paidTotal);
+              const remain = Math.max(0, total - alreadyPaid - paidTotal);
               return (
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-3">
                     <p className="text-xs text-[var(--muted)]">
-                      Chọn hình thức, nhập số tiền rồi bấm <b>Thêm</b> (hoặc Enter). Có thể tách nhiều lần. Bỏ trống = thu đủ tiền mặt.
+                      {editId
+                        ? "Thu thêm cho hoá đơn — chọn hình thức, nhập tiền rồi Thêm. Bỏ trống = giữ nguyên đã thu."
+                        : "Chọn hình thức, nhập số tiền rồi bấm Thêm (hoặc Enter). Có thể tách nhiều lần. Bỏ trống = thu đủ tiền mặt."}
                     </p>
                     <div className="grid grid-cols-3 gap-2">
                       {([
@@ -458,6 +463,12 @@ function Inner() {
                       <span className="text-[var(--muted)]">Tổng tiền</span>
                       <span className="font-medium">{formatVND(total)}</span>
                     </div>
+                    {editId && alreadyPaid > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[var(--muted)]">Đã thu trước</span>
+                        <span className="font-medium">{formatVND(alreadyPaid)}</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-[var(--muted)]">Khách trả</span>
                       <span className="font-medium text-[var(--success)]">{formatVND(paidShown)}</span>

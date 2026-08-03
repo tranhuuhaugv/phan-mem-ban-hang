@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
-import { handler, ok, serializeInvoice } from "@/lib/api-utils";
+import { handler, ok, serializeInvoice, nextCode } from "@/lib/api-utils";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -93,12 +93,33 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
       if (added.length) await tx.machine.updateMany({ where: { id: { in: added.map((m) => m.id) } }, data: { status: "da_ban" } });
 
       const total = items.reduce((s, i) => s + i.price, 0);
+      const basePaid = Math.min(inv.paid, total); // đã thu giữ nguyên, không vượt tổng mới
+
+      // Thu thêm khi sửa (payments[]) — cắt theo phần còn nợ
+      const norm = (m: unknown) => (m === "the" || m === "chuyen_khoan" ? m : "tien_mat");
+      const rawPay = Array.isArray(b.payments)
+        ? (b.payments as { method?: string; amount?: number }[])
+            .map((p) => ({ method: norm(p.method), amount: Math.max(0, Math.round(Number(p.amount) || 0)) }))
+            .filter((p) => p.amount > 0)
+        : [];
+      let remainDebt = total - basePaid;
+      const applied: { method: string; amount: number }[] = [];
+      for (const l of rawPay) {
+        if (remainDebt <= 0) break;
+        const p = Math.min(l.amount, remainDebt);
+        applied.push({ method: l.method, amount: p });
+        remainDebt -= p;
+      }
+      const finalPaid = basePaid + applied.reduce((s, l) => s + l.amount, 0);
+      const finalMethod = applied.length ? applied.slice().sort((a, b2) => b2.amount - a.amount)[0].method : undefined;
+
       await tx.invoiceItem.deleteMany({ where: { invoiceId: id } });
       await tx.invoice.update({
         where: { id },
         data: {
           total,
-          paid: Math.min(inv.paid, total), // đã thu giữ nguyên, không vượt tổng mới
+          paid: finalPaid,
+          ...(finalMethod ? { payMethod: finalMethod } : {}),
           customerName: b.customerName !== undefined ? String(b.customerName).trim() : undefined,
           phone: b.phone !== undefined ? (b.phone ? String(b.phone).trim() : null) : undefined,
           items: {
@@ -114,6 +135,26 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
           },
         },
       });
+
+      if (applied.length) {
+        const firstCode = await nextCode("cashFlow", "PT-", 4);
+        const baseNum = parseInt(firstCode.slice(3), 10) || 1;
+        for (let i = 0; i < applied.length; i++) {
+          const l = applied[i];
+          await tx.cashFlow.create({
+            data: {
+              code: `PT-${String(baseNum + i).padStart(4, "0")}`,
+              type: "thu",
+              amount: l.amount,
+              content: `Thanh toán hoá đơn ${inv.code}`,
+              category: "Bán hàng",
+              partner: inv.customerName,
+              method: l.method,
+              invoiceId: id,
+            },
+          });
+        }
+      }
     } else {
       await tx.invoice.update({
         where: { id },
