@@ -1,15 +1,14 @@
 "use client";
 
-import { use, useState, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
-import { Printer, ShieldCheck, Loader2, HandCoins, Wallet, CreditCard, Landmark, Pencil, Save, Trash2 } from "lucide-react";
+import { use, useState } from "react";
+import { Printer, ShieldCheck, Loader2, HandCoins, Wallet, CreditCard, Landmark } from "lucide-react";
 import { AccessGuard, BackLink } from "@/components/parts";
-import { Button, PageHeader, Card, MoneyInput, Field, Input, Select } from "@/components/ui";
+import { Button, PageHeader, Card, MoneyInput } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
-import { useApi, apiPost, apiPatch } from "@/lib/api";
-import { PAY_METHOD_LABEL, type Machine } from "@/lib/types";
+import { useApi, apiPost } from "@/lib/api";
+import { PAY_METHOD_LABEL } from "@/lib/types";
 import { formatVND, formatDateTime } from "@/lib/format";
 
 interface InvoiceDetail {
@@ -52,56 +51,9 @@ function Inner({ id }: { id: string }) {
   const { data: store } = useApi<StoreConfig>("/api/store-config");
   const { can } = useRole();
   const toast = useToast();
-  const { data: machines } = useApi<Machine[]>("/api/machines");
   const [openPay, setOpenPay] = useState(false);
   const [pay3, setPay3] = useState({ tien_mat: "", the: "", chuyen_khoan: "" });
-  const [openEditInv, setOpenEditInv] = useState(false);
-  const [editItems, setEditItems] = useState<{ serial: string; name: string; price: number }[]>([]);
-  const [editCust, setEditCust] = useState({ customerName: "", phone: "" });
   const [busy, setBusy] = useState(false);
-
-  const openEditInvoice = () => {
-    if (!iv) return;
-    setEditItems(iv.items.map((it) => ({ serial: it.serial, name: it.name, price: it.price })));
-    setEditCust({ customerName: iv.customerName ?? "", phone: iv.phone ?? "" });
-    setOpenEditInv(true);
-  };
-  const addEditItem = (serial: string) => {
-    const m = (machines ?? []).find((x) => x.serial === serial);
-    if (!m || editItems.some((i) => i.serial === serial)) return;
-    setEditItems((s) => [...s, { serial: m.serial, name: `${m.brand} ${m.model}`, price: m.salePrice ?? 0 }]);
-  };
-  const saveEditInvoice = async () => {
-    if (editItems.length === 0) return toast("Hoá đơn cần ít nhất 1 sản phẩm", "warning");
-    if (editItems.some((i) => !i.price)) return toast("Nhập giá cho tất cả sản phẩm", "warning");
-    setBusy(true);
-    try {
-      await apiPatch(`/api/invoices/${id}`, {
-        items: editItems.map((i) => ({ serial: i.serial, price: i.price })),
-        customerName: editCust.customerName.trim(),
-        phone: editCust.phone.trim(),
-      });
-      toast("Đã cập nhật hoá đơn");
-      setOpenEditInv(false);
-      reload();
-    } catch (e) {
-      toast(e instanceof Error ? e.message : "Cập nhật thất bại", "warning");
-    } finally {
-      setBusy(false);
-    }
-  };
-  const editTotal = editItems.reduce((s, i) => s + (Number(i.price) || 0), 0);
-
-  // Mở thẳng form Sửa khi vào từ danh sách (?edit=1)
-  const searchParams = useSearchParams();
-  const didAutoEdit = useRef(false);
-  useEffect(() => {
-    if (!didAutoEdit.current && iv && searchParams.get("edit") === "1" && can("hoa-don").edit) {
-      didAutoEdit.current = true;
-      openEditInvoice();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [iv, searchParams]);
 
   const payTotal = (["tien_mat", "the", "chuyen_khoan"] as const).reduce((s, m) => s + (Number(pay3[m]) || 0), 0);
 
@@ -158,11 +110,6 @@ function Inner({ id }: { id: string }) {
               {iv.debt > 0 && can("hoa-don").create && (
                 <Button variant="outline" onClick={() => openPayModal(iv.debt)}>
                   <HandCoins size={16} /> Thanh toán
-                </Button>
-              )}
-              {can("hoa-don").edit && (
-                <Button variant="outline" onClick={openEditInvoice}>
-                  <Pencil size={16} /> Sửa
                 </Button>
               )}
               <Button onClick={() => window.print()}>
@@ -369,89 +316,6 @@ function Inner({ id }: { id: string }) {
         </div>
       </Modal>
 
-      <Modal
-        open={openEditInv}
-        onClose={() => setOpenEditInv(false)}
-        title={`Sửa hoá đơn ${iv.code}`}
-        wide
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setOpenEditInv(false)}>
-              Huỷ
-            </Button>
-            <Button onClick={saveEditInvoice} disabled={busy}>
-              <Save size={16} /> {busy ? "Đang lưu..." : "Lưu thay đổi"}
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-3">
-          {iv.paid > 0 && (
-            <p className="rounded-lg bg-[var(--warning-bg)] px-3 py-2 text-xs text-[var(--warning)]">
-              Hoá đơn đã thu {formatVND(iv.paid)}. Sửa sản phẩm sẽ tính lại tổng; nếu tổng mới nhỏ hơn đã thu, phần đã thu sẽ được giữ tối đa bằng tổng mới.
-            </p>
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Tên khách">
-              <Input value={editCust.customerName} onChange={(e) => setEditCust((s) => ({ ...s, customerName: e.target.value }))} />
-            </Field>
-            <Field label="SĐT">
-              <Input value={editCust.phone} onChange={(e) => setEditCust((s) => ({ ...s, phone: e.target.value }))} />
-            </Field>
-          </div>
-
-          <div className="space-y-1.5">
-            <p className="text-sm font-medium">Sản phẩm</p>
-            {editItems.map((it, i) => (
-              <div key={it.serial} className="flex items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2">
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{it.name}</div>
-                  <div className="font-mono text-xs text-[var(--muted)]">{it.serial}</div>
-                </div>
-                <MoneyInput
-                  value={String(it.price)}
-                  onChange={(v) => setEditItems((s) => s.map((x, idx) => (idx === i ? { ...x, price: Number(v) || 0 } : x)))}
-                  placeholder="Giá bán"
-                  className="w-40"
-                />
-                <button
-                  type="button"
-                  onClick={() => setEditItems((s) => s.filter((_, idx) => idx !== i))}
-                  className="text-[var(--muted)] hover:text-[var(--danger)]"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            ))}
-            {editItems.length === 0 && <p className="text-xs text-[var(--muted)]">Chưa có sản phẩm nào.</p>}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Select
-              value=""
-              onChange={(e) => {
-                if (e.target.value) addEditItem(e.target.value);
-                e.target.value = "";
-              }}
-              className="flex-1"
-            >
-              <option value="">+ Thêm máy tồn kho…</option>
-              {(machines ?? [])
-                .filter((m) => m.status === "ton_kho" && !editItems.some((i) => i.serial === m.serial))
-                .map((m) => (
-                  <option key={m.id} value={m.serial}>
-                    {m.serial} — {m.brand} {m.model} {m.salePrice ? `(${formatVND(m.salePrice)})` : ""}
-                  </option>
-                ))}
-            </Select>
-          </div>
-
-          <div className="flex items-center justify-between border-t border-[var(--border)] pt-2 text-sm">
-            <span className="text-[var(--muted)]">Tổng tiền mới</span>
-            <span className="font-semibold">{formatVND(editTotal)}</span>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }

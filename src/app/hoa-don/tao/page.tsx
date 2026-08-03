@@ -8,7 +8,7 @@ import { CustomerField } from "@/components/customer-field";
 import { Button, PageHeader, Field, Input, Select, MoneyInput } from "@/components/ui";
 import { PayMethodLabel } from "@/components/pay";
 import { useToast } from "@/components/toast";
-import { useApi, apiPost } from "@/lib/api";
+import { useApi, apiPost, apiPatch } from "@/lib/api";
 import { QuickAddMachine } from "@/components/quick-add-machine";
 import type { Machine, Order, Repair, Invoice } from "@/lib/types";
 import { formatVND } from "@/lib/format";
@@ -20,6 +20,14 @@ interface LineItem {
   name: string;
   config: string;
   price: number;
+}
+
+interface EditInvoice {
+  id: string;
+  code: string;
+  customerName: string;
+  phone: string;
+  items: { id: string; serial: string; name: string; config: string; price: number }[];
 }
 
 export default function Page() {
@@ -48,14 +56,22 @@ function Inner() {
   const [payMethod, setPayMethod] = useState<"tien_mat" | "the" | "chuyen_khoan">("tien_mat");
   const [payAmt, setPayAmt] = useState("");
   const [payLines, setPayLines] = useState<{ method: "tien_mat" | "the" | "chuyen_khoan"; amount: number }[]>([]);
+  const [editId, setEditId] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // Nhận link từ đơn hàng (?order=) hoặc phiếu sửa (?repair=)
+  // Chế độ sửa: tải hoá đơn cần sửa
+  const { data: editInv } = useApi<EditInvoice>(editId ? `/api/invoices/${editId}` : null);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  // Nhận link: sửa (?edit=), từ đơn hàng (?order=), hoặc phiếu sửa (?repair=)
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
+    const e = sp.get("edit");
     const o = sp.get("order");
     const r = sp.get("repair");
-    if (o) {
+    if (e) {
+      setEditId(e);
+    } else if (o) {
       setMode("order");
       setOrderId(o);
     } else if (r) {
@@ -63,6 +79,16 @@ function Inner() {
       setRepairId(r);
     }
   }, []);
+
+  // Đổ dữ liệu hoá đơn vào form khi sửa
+  useEffect(() => {
+    if (!editInv) return;
+    setMode("direct");
+    setItems(editInv.items.map((it) => ({ serial: it.serial, name: it.name, config: it.config, price: it.price })));
+    setCustomerName(editInv.customerName ?? "");
+    setPhone(editInv.phone ?? "");
+  }, [editInv]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const inStock = (machinesData ?? []).filter((m) => m.status === "ton_kho");
   const sellable = (ordersData ?? []).filter((o) => o.status !== "huy" && o.status !== "da_giao");
@@ -106,6 +132,26 @@ function Inner() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Chế độ sửa hoá đơn → PATCH item + khách
+    if (editId) {
+      if (items.length === 0) return toast("Hoá đơn cần ít nhất 1 sản phẩm", "warning");
+      if (items.some((i) => !i.price)) return toast("Nhập giá bán cho tất cả sản phẩm", "warning");
+      setBusy(true);
+      try {
+        await apiPatch(`/api/invoices/${editId}`, {
+          items: items.map((i) => ({ serial: i.serial, price: i.price })),
+          customerName,
+          phone,
+        });
+        toast("Đã cập nhật hoá đơn");
+        router.push(`/hoa-don/${editId}`);
+      } catch (err) {
+        toast(err instanceof Error ? err.message : "Cập nhật thất bại", "warning");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     if (mode === "direct") {
       if (items.length === 0) return toast("Thêm ít nhất 1 sản phẩm vào hoá đơn", "warning");
       if (items.some((i) => !i.price)) return toast("Nhập giá bán cho tất cả sản phẩm", "warning");
@@ -146,20 +192,25 @@ function Inner() {
   return (
     <div>
       <BackLink href="/hoa-don">Về danh sách hoá đơn</BackLink>
-      <PageHeader title="Tạo hoá đơn / phiếu thanh toán" subtitle="Bán trực tiếp, từ đơn đặt hàng, hoặc thu tiền công từ phiếu sửa chữa" />
+      <PageHeader
+        title={editId ? `Sửa hoá đơn ${editInv?.code ?? ""}` : "Tạo hoá đơn / phiếu thanh toán"}
+        subtitle={editId ? "Thêm / xoá / đổi sản phẩm & giá — lưu lại sẽ tính lại tổng và trạng thái máy" : "Bán trực tiếp, từ đơn đặt hàng, hoặc thu tiền công từ phiếu sửa chữa"}
+      />
 
       <form onSubmit={submit} className="space-y-3">
-        <div className="inline-flex flex-wrap rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5">
-          <button type="button" onClick={() => setMode("direct")} className={pill(mode === "direct")}>
-            <PackageOpen size={15} /> Bán từ kho
-          </button>
-          <button type="button" onClick={() => setMode("order")} className={pill(mode === "order")}>
-            <FileText size={15} /> Từ đơn hàng
-          </button>
-          <button type="button" onClick={() => setMode("repair")} className={pill(mode === "repair")}>
-            <Wrench size={15} /> Từ phiếu sửa chữa
-          </button>
-        </div>
+        {!editId && (
+          <div className="inline-flex flex-wrap rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5">
+            <button type="button" onClick={() => setMode("direct")} className={pill(mode === "direct")}>
+              <PackageOpen size={15} /> Bán từ kho
+            </button>
+            <button type="button" onClick={() => setMode("order")} className={pill(mode === "order")}>
+              <FileText size={15} /> Từ đơn hàng
+            </button>
+            <button type="button" onClick={() => setMode("repair")} className={pill(mode === "repair")}>
+              <Wrench size={15} /> Từ phiếu sửa chữa
+            </button>
+          </div>
+        )}
 
         {mode === "repair" ? (
           <div className="grid items-start gap-3 lg:grid-cols-2">
@@ -337,7 +388,7 @@ function Inner() {
           </div>
         )}
 
-        {mode === "direct" && (
+        {mode === "direct" && !editId && (
           <SectionCard title="Thanh toán">
             {(() => {
               const isEmpty = payLines.length === 0;
@@ -427,7 +478,7 @@ function Inner() {
             Huỷ
           </Button>
           <Button type="submit" disabled={busy}>
-            <Save size={16} /> {busy ? "Đang tạo..." : "Tạo hoá đơn"}
+            <Save size={16} /> {busy ? "Đang lưu..." : editId ? "Lưu thay đổi" : "Tạo hoá đơn"}
           </Button>
         </div>
       </form>
