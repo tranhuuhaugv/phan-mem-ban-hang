@@ -26,6 +26,13 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
         technician: b.technician !== undefined ? String(b.technician) : undefined,
         actualCost: b.actualCost !== undefined ? Number(b.actualCost) : undefined,
         note: b.note !== undefined ? (b.note ? String(b.note) : null) : undefined,
+        // Sửa thông tin phiếu (máy khách, khách, lỗi, chi phí dự kiến, chi nhánh)
+        machineName: b.machineName !== undefined ? (b.machineName ? String(b.machineName).trim() : null) : undefined,
+        customerName: b.customerName !== undefined ? (b.customerName ? String(b.customerName).trim() : null) : undefined,
+        customerPhone: b.customerPhone !== undefined ? (b.customerPhone ? String(b.customerPhone).trim() : null) : undefined,
+        errorDesc: b.errorDesc !== undefined ? String(b.errorDesc).trim() : undefined,
+        estCost: b.estCost !== undefined ? Number(b.estCost) : undefined,
+        branchId: b.branchId !== undefined ? (b.branchId ? String(b.branchId) : null) : undefined,
         returnDate: status === "hoan_tat" ? new Date() : undefined,
       },
       include: { machine: true, branch: true },

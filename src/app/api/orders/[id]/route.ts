@@ -24,12 +24,25 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
   if (!order) throw new HttpError(404, "Không tìm thấy đơn hàng");
 
   const row = await db.$transaction(async (tx) => {
+    // Đổi máy (sản phẩm) trong đơn: máy cũ về Tồn kho, máy mới giữ theo trạng thái đơn
+    if (b.machineId !== undefined && (b.machineId || null) !== order.machineId) {
+      if (order.machineId) await tx.machine.update({ where: { id: order.machineId }, data: { status: "ton_kho" } });
+      if (b.machineId) {
+        const eff = (status ?? order.status) as OrderStatus;
+        const newStatus = eff === "da_giao" ? "da_ban" : eff === "huy" ? "ton_kho" : "dat_coc";
+        await tx.machine.update({ where: { id: String(b.machineId) }, data: { status: newStatus } });
+      }
+    }
+
     const updated = await tx.order.update({
       where: { id },
       data: {
         status,
         deposit: b.deposit !== undefined ? Number(b.deposit) : undefined,
         sellPrice: b.sellPrice !== undefined ? Number(b.sellPrice) : undefined,
+        customerName: b.customerName !== undefined ? String(b.customerName).trim() : undefined,
+        phone: b.phone !== undefined ? String(b.phone).trim() : undefined,
+        machineId: b.machineId !== undefined ? (b.machineId ? String(b.machineId) : null) : undefined,
       },
       include: { machine: true },
     });

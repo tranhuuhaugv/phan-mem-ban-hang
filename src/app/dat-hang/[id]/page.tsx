@@ -2,13 +2,15 @@
 
 import { use, useState } from "react";
 import { AccessGuard, BackLink, DetailRow, SectionCard } from "@/components/parts";
-import { PageHeader, Card, Button } from "@/components/ui";
+import { PageHeader, Card, Button, Field, Input, Select, MoneyInput } from "@/components/ui";
+import { Modal } from "@/components/modal";
 import { OrderStatusBadge } from "@/components/status";
 import { useToast } from "@/components/toast";
+import { useRole } from "@/components/role-context";
 import { useApi, apiPatch } from "@/lib/api";
-import type { Order } from "@/lib/types";
+import type { Order, Machine } from "@/lib/types";
 import { formatVND, formatDateTime } from "@/lib/format";
-import { ReceiptText, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { ReceiptText, CheckCircle2, XCircle, Loader2, Pencil, Save } from "lucide-react";
 
 interface OrderDetail extends Order {
   config?: string;
@@ -25,14 +27,51 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
 function Inner({ id }: { id: string }) {
   const toast = useToast();
+  const { can } = useRole();
+  const canEdit = can("dat-hang").edit;
   const { data: order, loading, reload } = useApi<OrderDetail>(`/api/orders/${id}`);
+  const { data: machines } = useApi<Machine[]>("/api/machines");
   const [busy, setBusy] = useState(false);
+  const [edit, setEdit] = useState(false);
+  const [f, setF] = useState({ customerName: "", phone: "", serial: "", sellPrice: "", deposit: "" });
 
   const setStatus = async (status: string, label: string) => {
     setBusy(true);
     try {
       await apiPatch(`/api/orders/${id}`, { status });
       toast(label);
+      reload();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Cập nhật thất bại", "warning");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openEdit = () => {
+    if (!order) return;
+    setF({
+      customerName: order.customerName ?? "",
+      phone: order.phone ?? "",
+      serial: order.serial ?? "",
+      sellPrice: String(order.sellPrice ?? ""),
+      deposit: String(order.deposit ?? ""),
+    });
+    setEdit(true);
+  };
+  const saveEdit = async () => {
+    const machineId = (machines ?? []).find((m) => m.serial === f.serial)?.id ?? "";
+    setBusy(true);
+    try {
+      await apiPatch(`/api/orders/${id}`, {
+        customerName: f.customerName.trim(),
+        phone: f.phone.trim(),
+        machineId,
+        sellPrice: Number(f.sellPrice) || 0,
+        deposit: Number(f.deposit) || 0,
+      });
+      toast("Đã cập nhật đơn hàng");
+      setEdit(false);
       reload();
     } catch (e) {
       toast(e instanceof Error ? e.message : "Cập nhật thất bại", "warning");
@@ -79,6 +118,11 @@ function Inner({ id }: { id: string }) {
                 </Button>
               </>
             )}
+            {canEdit && (
+              <Button variant="outline" onClick={openEdit}>
+                <Pencil size={15} /> Sửa đơn
+              </Button>
+            )}
             <Button href={`/hoa-don/tao?order=${order.id}`}>
               <ReceiptText size={16} /> Tạo phiếu thanh toán
             </Button>
@@ -111,6 +155,54 @@ function Inner({ id }: { id: string }) {
           </DetailRow>
         </SectionCard>
       </div>
+
+      <Modal
+        open={edit}
+        onClose={() => setEdit(false)}
+        title="Sửa đơn hàng"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setEdit(false)}>
+              Huỷ
+            </Button>
+            <Button onClick={saveEdit} disabled={busy}>
+              <Save size={16} /> {busy ? "Đang lưu..." : "Lưu"}
+            </Button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Tên khách">
+            <Input value={f.customerName} onChange={(e) => setF((s) => ({ ...s, customerName: e.target.value }))} />
+          </Field>
+          <Field label="SĐT">
+            <Input value={f.phone} onChange={(e) => setF((s) => ({ ...s, phone: e.target.value }))} />
+          </Field>
+          <div className="col-span-2">
+            <Field label="Máy (Mã SP)" hint="Đổi máy: máy cũ trả về Tồn kho, máy mới được giữ cho đơn">
+              <Select value={f.serial} onChange={(e) => setF((s) => ({ ...s, serial: e.target.value }))}>
+                <option value="">— Chưa gán máy —</option>
+                {order.serial && !(machines ?? []).some((m) => m.serial === order.serial && m.status === "ton_kho") && (
+                  <option value={order.serial}>{order.serial} — {order.model} (đang gán)</option>
+                )}
+                {(machines ?? [])
+                  .filter((m) => m.status === "ton_kho")
+                  .map((m) => (
+                    <option key={m.id} value={m.serial}>
+                      {m.serial} — {m.brand} {m.model}
+                    </option>
+                  ))}
+              </Select>
+            </Field>
+          </div>
+          <Field label="Giá bán (₫)">
+            <MoneyInput value={f.sellPrice} onChange={(v) => setF((s) => ({ ...s, sellPrice: v }))} />
+          </Field>
+          <Field label="Đã cọc (₫)">
+            <MoneyInput value={f.deposit} onChange={(v) => setF((s) => ({ ...s, deposit: v }))} />
+          </Field>
+        </div>
+      </Modal>
     </div>
   );
 }
