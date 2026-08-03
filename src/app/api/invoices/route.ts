@@ -156,12 +156,31 @@ export const POST = handler(async (req: Request) => {
 
   const total = items.reduce((s, i) => s + Number(i.price), 0);
 
-  // Thanh toán: mặc định thu đủ; cho phép thu một phần → phần còn lại là công nợ khách
-  const paid =
-    b.amountPaid === undefined || b.amountPaid === null || b.amountPaid === ""
-      ? total
-      : Math.max(0, Math.min(total, Math.round(Number(b.amountPaid) || 0)));
-  const payMethod = b.payMethod === "the" || b.payMethod === "chuyen_khoan" ? b.payMethod : "tien_mat";
+  // Thanh toán: mặc định thu đủ; cho phép thu một phần (còn nợ) và tách nhiều hình thức
+  const norm = (m: unknown) => (m === "the" || m === "chuyen_khoan" ? m : "tien_mat");
+  const rawPay: { method: string; amount: number }[] = Array.isArray(b.payments)
+    ? b.payments
+        .map((p: { method?: string; amount?: number }) => ({ method: norm(p.method), amount: Math.round(Number(p.amount) || 0) }))
+        .filter((p: { amount: number }) => p.amount > 0)
+    : (() => {
+        const amt =
+          b.amountPaid === undefined || b.amountPaid === null || b.amountPaid === ""
+            ? total
+            : Math.round(Number(b.amountPaid) || 0);
+        return amt > 0 ? [{ method: norm(b.payMethod), amount: amt }] : [];
+      })();
+
+  // Cắt theo tổng tiền hoá đơn (không thu quá)
+  let remainCap = total;
+  const payLines: { method: string; amount: number }[] = [];
+  for (const l of rawPay) {
+    if (remainCap <= 0) break;
+    const p = Math.min(l.amount, remainCap);
+    payLines.push({ method: l.method, amount: p });
+    remainCap -= p;
+  }
+  const paid = payLines.reduce((s, l) => s + l.amount, 0);
+  const payMethod = payLines.length ? payLines.slice().sort((a, b2) => b2.amount - a.amount)[0].method : "tien_mat";
 
   const custName = String(b.customerName ?? "Khách lẻ").trim() || "Khách lẻ";
   const custPhone = b.phone ? String(b.phone).trim() : "";
@@ -197,20 +216,24 @@ export const POST = handler(async (req: Request) => {
 
     await tx.machine.updateMany({ where: { id: { in: machines.map((m) => m.id) } }, data: { status: "da_ban" } });
 
-    if (paid > 0) {
-      const cashCode = await nextCode("cashFlow", "PT-", 4);
-      await tx.cashFlow.create({
-        data: {
-          code: cashCode,
-          type: "thu",
-          amount: paid,
-          content: `Bán hàng - hoá đơn ${code}${paid < total ? " (trả một phần)" : ""}`,
-          category: "Bán hàng",
-          partner: invoice.customerName,
-          method: payMethod,
-          invoiceId: invoice.id,
-        },
-      });
+    if (payLines.length > 0) {
+      const firstCode = await nextCode("cashFlow", "PT-", 4);
+      const baseNum = parseInt(firstCode.slice(3), 10) || 1;
+      for (let i = 0; i < payLines.length; i++) {
+        const l = payLines[i];
+        await tx.cashFlow.create({
+          data: {
+            code: `PT-${String(baseNum + i).padStart(4, "0")}`,
+            type: "thu",
+            amount: l.amount,
+            content: `Bán hàng - hoá đơn ${code}${paid < total ? " (trả một phần)" : ""}`,
+            category: "Bán hàng",
+            partner: invoice.customerName,
+            method: l.method,
+            invoiceId: invoice.id,
+          },
+        });
+      }
     }
 
     if (b.warranty?.months) {

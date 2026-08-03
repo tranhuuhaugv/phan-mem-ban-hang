@@ -246,12 +246,14 @@ export function MoneyInput({
   placeholder,
   className = "",
   autoFocus,
+  onEnter,
 }: {
   value: string | number;
   onChange: (v: string) => void;
   placeholder?: string;
   className?: string;
   autoFocus?: boolean;
+  onEnter?: () => void;
 }) {
   const digits = String(value ?? "").replace(/\D/g, "");
   const display = digits === "" ? "" : Number(digits).toLocaleString("vi-VN");
@@ -260,6 +262,16 @@ export function MoneyInput({
       inputMode="numeric"
       value={display}
       onChange={(e) => onChange(e.target.value.replace(/\D/g, ""))}
+      onKeyDown={
+        onEnter
+          ? (e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onEnter();
+              }
+            }
+          : undefined
+      }
       placeholder={placeholder}
       autoFocus={autoFocus}
       className={`${inputCls} ${className}`}
