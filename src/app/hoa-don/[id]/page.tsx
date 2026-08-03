@@ -3,7 +3,7 @@
 import { use, useState } from "react";
 import { Printer, ShieldCheck, Loader2, HandCoins, Wallet, CreditCard, Landmark } from "lucide-react";
 import { AccessGuard, BackLink } from "@/components/parts";
-import { Button, PageHeader, Card, Field, MoneyInput } from "@/components/ui";
+import { Button, PageHeader, Card, MoneyInput } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { useToast } from "@/components/toast";
 import { useRole } from "@/components/role-context";
@@ -52,24 +52,26 @@ function Inner({ id }: { id: string }) {
   const { can } = useRole();
   const toast = useToast();
   const [openPay, setOpenPay] = useState(false);
-  const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<"tien_mat" | "the" | "chuyen_khoan">("tien_mat");
+  const [pay3, setPay3] = useState({ tien_mat: "", the: "", chuyen_khoan: "" });
   const [busy, setBusy] = useState(false);
 
+  const payTotal = (["tien_mat", "the", "chuyen_khoan"] as const).reduce((s, m) => s + (Number(pay3[m]) || 0), 0);
+
   const openPayModal = (debt: number) => {
-    setAmount(String(debt));
-    setMethod("tien_mat");
+    setPay3({ tien_mat: String(debt), the: "", chuyen_khoan: "" });
     setOpenPay(true);
   };
   const pay = async () => {
-    const amt = Math.round(Number(amount) || 0);
-    if (amt <= 0) {
+    const payments = (["tien_mat", "the", "chuyen_khoan"] as const)
+      .map((m) => ({ method: m, amount: Math.round(Number(pay3[m]) || 0) }))
+      .filter((p) => p.amount > 0);
+    if (payments.length === 0) {
       toast("Nhập số tiền thanh toán", "warning");
       return;
     }
     setBusy(true);
     try {
-      const res = await apiPost<{ paid: number; debt: number }>(`/api/invoices/${id}/pay`, { amount: amt, method });
+      const res = await apiPost<{ paid: number; debt: number }>(`/api/invoices/${id}/pay`, { payments });
       toast(res.debt > 0 ? `Đã thu ${formatVND(res.paid)} — còn nợ ${formatVND(res.debt)}` : "Đã thu đủ hoá đơn");
       setOpenPay(false);
       reload();
@@ -289,32 +291,28 @@ function Inner({ id }: { id: string }) {
           <div className="rounded-lg bg-[var(--surface-2)] px-3 py-2 text-sm">
             Còn nợ: <span className="font-semibold text-[var(--danger)]">{formatVND(iv.debt)}</span>
           </div>
-          <Field label="Số tiền thu (₫)" hint="Tối đa bằng số còn nợ; thu một phần cũng được">
-            <MoneyInput value={amount} onChange={setAmount} placeholder="0" autoFocus />
-          </Field>
-          <Field label="Hình thức">
-            <div className="grid grid-cols-3 gap-2">
-              {([
-                { k: "tien_mat", label: "Tiền mặt", icon: Wallet },
-                { k: "the", label: "Thẻ", icon: CreditCard },
-                { k: "chuyen_khoan", label: "Chuyển khoản", icon: Landmark },
-              ] as const).map(({ k, label, icon: Icon }) => {
-                const active = method === k;
-                return (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => setMethod(k)}
-                    className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition ${
-                      active ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]" : "border-[var(--border)] hover:bg-[var(--surface-2)]"
-                    }`}
-                  >
-                    <Icon size={16} /> {label}
-                  </button>
-                );
-              })}
+          <p className="text-xs text-[var(--muted)]">
+            Nhập số tiền theo từng hình thức — có thể tách (VD: 5.000.000 chuyển khoản + 5.000.000 tiền mặt).
+          </p>
+          {([
+            { k: "tien_mat", label: "Tiền mặt", icon: Wallet },
+            { k: "the", label: "Thẻ", icon: CreditCard },
+            { k: "chuyen_khoan", label: "Chuyển khoản", icon: Landmark },
+          ] as const).map(({ k, label, icon: Icon }) => (
+            <div key={k} className="flex items-center gap-3">
+              <span className="flex w-32 shrink-0 items-center gap-1.5 text-sm">
+                <Icon size={15} /> {label}
+              </span>
+              <MoneyInput value={pay3[k]} onChange={(v) => setPay3((s) => ({ ...s, [k]: v }))} placeholder="0" className="flex-1" />
             </div>
-          </Field>
+          ))}
+          <div className="flex items-center justify-between border-t border-[var(--border)] pt-2 text-sm">
+            <span className="text-[var(--muted)]">Tổng thu</span>
+            <span className={`font-semibold ${payTotal > iv.debt ? "text-[var(--danger)]" : "text-[var(--success)]"}`}>
+              {formatVND(payTotal)}
+              {payTotal > iv.debt && <span className="ml-1 text-xs font-normal">(vượt còn nợ, sẽ chỉ thu tối đa {formatVND(iv.debt)})</span>}
+            </span>
+          </div>
         </div>
       </Modal>
     </div>

@@ -87,6 +87,11 @@ export async function upsertCustomer(
   return c.id;
 }
 
+// Bỏ dấu phân cách thừa khi cấu hình rỗng: " ·  · " → ""
+function cleanConfig(s: string): string {
+  return s.split("·").map((p) => p.trim()).filter(Boolean).join(" · ");
+}
+
 // ===== Serializers: DB row → hình dạng UI đang dùng (src/lib/types.ts) =====
 
 type MachineRow = {
@@ -297,7 +302,7 @@ export function serializeInvoice(iv: {
       id: it.id,
       serial: it.machine?.serial ?? "",
       name: it.name,
-      config: it.config,
+      config: cleanConfig(it.config),
       price: it.price,
     })),
   };

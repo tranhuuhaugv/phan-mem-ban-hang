@@ -98,7 +98,7 @@ export const POST = handler(async (req: Request) => {
             create: [
               {
                 name: order.machine ? `${order.machine.brand} ${order.machine.model}` : "Laptop",
-                config: order.machine ? `${order.machine.cpu} · ${order.machine.ram} · ${order.machine.storage}` : "",
+                config: order.machine ? [order.machine.cpu, order.machine.ram, order.machine.storage].filter(Boolean).join(" · ") : "",
                 price: order.sellPrice,
                 machineId: order.machineId,
               },
@@ -185,7 +185,7 @@ export const POST = handler(async (req: Request) => {
             const m = machines.find((x) => x.serial === i.serial)!;
             return {
               name: `${m.brand} ${m.model}`,
-              config: `${m.cpu} · ${m.ram} · ${m.storage}`,
+              config: [m.cpu, m.ram, m.storage].filter(Boolean).join(" · "),
               price: Number(i.price),
               machineId: m.id,
             };
