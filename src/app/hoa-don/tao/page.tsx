@@ -29,6 +29,7 @@ interface EditInvoice {
   phone: string;
   paid: number;
   items: { id: string; serial: string; name: string; config: string; price: number }[];
+  payments: { id: string; amount: number; method?: string }[];
 }
 
 export default function Page() {
@@ -88,6 +89,12 @@ function Inner() {
     setItems(editInv.items.map((it) => ({ serial: it.serial, name: it.name, config: it.config, price: it.price })));
     setCustomerName(editInv.customerName ?? "");
     setPhone(editInv.phone ?? "");
+    setPayLines(
+      (editInv.payments ?? []).map((p) => ({
+        method: p.method === "the" || p.method === "chuyen_khoan" ? p.method : "tien_mat",
+        amount: p.amount,
+      })),
+    );
   }, [editInv]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -143,7 +150,7 @@ function Inner() {
           items: items.map((i) => ({ serial: i.serial, price: i.price })),
           customerName,
           phone,
-          payments: payLines.length ? payLines : undefined,
+          payments: payLines, // gửi toàn bộ cách chia → thay các phiếu thu cũ
         });
         toast("Đã cập nhật hoá đơn");
         router.push(`/hoa-don/${editId}`);
@@ -393,17 +400,16 @@ function Inner() {
         {mode === "direct" && (
           <SectionCard title="Thanh toán">
             {(() => {
-              const alreadyPaid = editId ? editInv?.paid ?? 0 : 0;
               const isEmpty = payLines.length === 0;
-              const paidShown = editId ? Math.min(alreadyPaid + paidTotal, total) : isEmpty ? total : Math.min(paidTotal, total);
+              const paidShown = editId ? Math.min(paidTotal, total) : isEmpty ? total : Math.min(paidTotal, total);
               const debtShown = Math.max(0, total - paidShown);
-              const remain = Math.max(0, total - alreadyPaid - paidTotal);
+              const remain = Math.max(0, total - paidTotal);
               return (
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-3">
                     <p className="text-xs text-[var(--muted)]">
                       {editId
-                        ? "Thu thêm cho hoá đơn — chọn hình thức, nhập tiền rồi Thêm. Bỏ trống = giữ nguyên đã thu."
+                        ? "Sửa lại cách thu: sửa số tiền từng dòng, hoặc thêm/xoá dòng (mỗi dòng một hình thức). Tổng các dòng = tiền khách đã trả."
                         : "Chọn hình thức, nhập số tiền rồi bấm Thêm (hoặc Enter). Có thể tách nhiều lần. Bỏ trống = thu đủ tiền mặt."}
                     </p>
                     <div className="grid grid-cols-3 gap-2">
@@ -445,10 +451,14 @@ function Inner() {
                     {payLines.length > 0 && (
                       <div className="space-y-1.5">
                         {payLines.map((l, i) => (
-                          <div key={i} className="flex items-center justify-between rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm">
+                          <div key={i} className="flex items-center justify-between gap-2 rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm">
                             <PayMethodLabel method={l.method} />
-                            <span className="flex items-center gap-3">
-                              <span className="font-medium">{formatVND(l.amount)}</span>
+                            <span className="flex items-center gap-2">
+                              <MoneyInput
+                                value={String(l.amount)}
+                                onChange={(v) => setPayLines((s) => s.map((x, idx) => (idx === i ? { ...x, amount: Number(v) || 0 } : x)))}
+                                className="w-36"
+                              />
                               <button type="button" onClick={() => removePayLine(i)} className="text-[var(--muted)] hover:text-[var(--danger)]">
                                 <X size={14} />
                               </button>
@@ -463,12 +473,6 @@ function Inner() {
                       <span className="text-[var(--muted)]">Tổng tiền</span>
                       <span className="font-medium">{formatVND(total)}</span>
                     </div>
-                    {editId && alreadyPaid > 0 && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-[var(--muted)]">Đã thu trước</span>
-                        <span className="font-medium">{formatVND(alreadyPaid)}</span>
-                      </div>
-                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-[var(--muted)]">Khách trả</span>
                       <span className="font-medium text-[var(--success)]">{formatVND(paidShown)}</span>

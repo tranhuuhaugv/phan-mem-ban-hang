@@ -95,25 +95,26 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
       if (added.length) await tx.machine.updateMany({ where: { id: { in: added.map((m) => m.id) } }, data: { status: "da_ban" } });
 
       const total = items.reduce((s, i) => s + i.price, 0);
-      const basePaid = Math.min(inv.paid, total); // đã thu giữ nguyên, không vượt tổng mới
 
-      // Thu thêm khi sửa (payments[]) — cắt theo phần còn nợ
+      // Thanh toán: gửi payments[] → SỬA LẠI toàn bộ cách thu (thay các phiếu thu cũ);
+      // không gửi payments → giữ nguyên tiền đã thu.
       const norm = (m: unknown) => (m === "the" || m === "chuyen_khoan" ? m : "tien_mat");
-      const rawPay = Array.isArray(b.payments)
-        ? (b.payments as { method?: string; amount?: number }[])
-            .map((p) => ({ method: norm(p.method), amount: Math.max(0, Math.round(Number(p.amount) || 0)) }))
-            .filter((p) => p.amount > 0)
-        : [];
-      let remainDebt = total - basePaid;
+      const replacePay = Array.isArray(b.payments);
       const applied: { method: string; amount: number }[] = [];
-      for (const l of rawPay) {
-        if (remainDebt <= 0) break;
-        const p = Math.min(l.amount, remainDebt);
-        applied.push({ method: l.method, amount: p });
-        remainDebt -= p;
+      if (replacePay) {
+        const raw = (b.payments as { method?: string; amount?: number }[])
+          .map((p) => ({ method: norm(p.method), amount: Math.max(0, Math.round(Number(p.amount) || 0)) }))
+          .filter((p) => p.amount > 0);
+        let cap = total; // không cho tổng thu vượt tổng hoá đơn
+        for (const l of raw) {
+          if (cap <= 0) break;
+          const p = Math.min(l.amount, cap);
+          applied.push({ method: l.method, amount: p });
+          cap -= p;
+        }
       }
-      const finalPaid = basePaid + applied.reduce((s, l) => s + l.amount, 0);
-      const finalMethod = applied.length ? applied.slice().sort((a, b2) => b2.amount - a.amount)[0].method : undefined;
+      const finalPaid = replacePay ? applied.reduce((s, l) => s + l.amount, 0) : Math.min(inv.paid, total);
+      const finalMethod = replacePay ? (applied.length ? applied.slice().sort((a, b2) => b2.amount - a.amount)[0].method : "tien_mat") : undefined;
 
       await tx.invoiceItem.deleteMany({ where: { invoiceId: id } });
       await tx.invoice.update({
@@ -138,23 +139,28 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
         },
       });
 
-      if (applied.length) {
-        const firstCode = await nextCode("cashFlow", "PT-", 4);
-        const baseNum = parseInt(firstCode.slice(3), 10) || 1;
-        for (let i = 0; i < applied.length; i++) {
-          const l = applied[i];
-          await tx.cashFlow.create({
-            data: {
-              code: `PT-${String(baseNum + i).padStart(4, "0")}`,
-              type: "thu",
-              amount: l.amount,
-              content: `Thanh toán hoá đơn ${inv.code}`,
-              category: "Bán hàng",
-              partner: inv.customerName,
-              method: l.method,
-              invoiceId: id,
-            },
-          });
+      // Thay toàn bộ phiếu thu của hoá đơn theo cách chia mới (giữ ngày theo ngày lập HĐ)
+      if (replacePay) {
+        await tx.cashFlow.deleteMany({ where: { invoiceId: id } });
+        if (applied.length) {
+          const firstCode = await nextCode("cashFlow", "PT-", 4);
+          const baseNum = parseInt(firstCode.slice(3), 10) || 1;
+          for (let i = 0; i < applied.length; i++) {
+            const l = applied[i];
+            await tx.cashFlow.create({
+              data: {
+                code: `PT-${String(baseNum + i).padStart(4, "0")}`,
+                type: "thu",
+                amount: l.amount,
+                date: inv.createdAt,
+                content: `Thanh toán hoá đơn ${inv.code}`,
+                category: "Bán hàng",
+                partner: inv.customerName,
+                method: l.method,
+                invoiceId: id,
+              },
+            });
+          }
         }
       }
     } else {
