@@ -1,12 +1,13 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
 import { handler, ok, nextCode } from "@/lib/api-utils";
+import { logAudit, auditVnd } from "@/lib/audit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 // Thanh toán thêm cho hoá đơn (thu tiền công nợ khách) → tăng paid + ghi phiếu thu
 export const POST = handler(async (req: Request, { params }: Ctx) => {
-  await requirePermission("hoa-don", "create");
+  const user = await requirePermission("hoa-don", "create");
   const { id } = await params;
   const b = await req.json();
 
@@ -62,5 +63,6 @@ export const POST = handler(async (req: Request, { params }: Ctx) => {
     }
   });
 
+  await logAudit(user, "pay", "invoice", inv.code, `Thu tiền HĐ ${inv.code} — ${auditVnd(totalPay)}`);
   return ok({ paid: totalPay, debt: debt - totalPay });
 });

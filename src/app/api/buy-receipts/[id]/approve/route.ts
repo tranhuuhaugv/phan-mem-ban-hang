@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
 import { handler, ok, serializeBuyReceipt, nextCode } from "@/lib/api-utils";
+import { logAudit } from "@/lib/audit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -57,5 +58,6 @@ export const POST = handler(async (req: Request, { params }: Ctx) => {
     return [machine, updated] as const;
   });
 
+  await logAudit(user, "approve", "buy", receipt.code, `Duyệt thu máy ${receipt.code} → ${machine.serial}`);
   return ok({ receipt: serializeBuyReceipt(updated), machineSerial: machine.serial });
 });

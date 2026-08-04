@@ -1,13 +1,14 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
 import { handler, ok } from "@/lib/api-utils";
+import { logAudit } from "@/lib/audit";
 import type { Condition } from "@/generated/prisma/enums";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 // Xoá phiếu nhập: xoá các máy của phiếu (nếu chưa bán/xuất), trừ lại công nợ NCC, xoá phiếu chi
 export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
-  await requirePermission("nhap-kho", "remove");
+  const user = await requirePermission("nhap-kho", "remove");
   const { id } = await params;
   const r = await db.stockIn.findUnique({ where: { id }, include: { machines: true } });
   if (!r) throw new HttpError(404, "Không tìm thấy phiếu nhập");
@@ -22,6 +23,7 @@ export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
     await tx.cashFlow.deleteMany({ where: { content: { contains: r.code } } });
     await tx.stockIn.delete({ where: { id } });
   });
+  await logAudit(user, "delete", "stockin", r.code, `Xoá phiếu nhập ${r.code}`);
   return ok({ ok: true });
 });
 
@@ -118,6 +120,7 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
     });
   });
 
+  await logAudit(user, "update", "stockin", r.code, `Sửa phiếu nhập ${r.code}`);
   return ok({ ok: true });
 });
 

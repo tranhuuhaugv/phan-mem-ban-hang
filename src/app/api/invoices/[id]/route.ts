@@ -1,12 +1,13 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
 import { handler, ok, serializeInvoice, nextCode } from "@/lib/api-utils";
+import { logAudit } from "@/lib/audit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 // Xoá hoá đơn: đảo máy về tồn kho (bán trực tiếp) hoặc đặt cọc (đơn hàng); xoá phiếu thu + bảo hành của HĐ
 export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
-  await requirePermission("hoa-don", "remove");
+  const user = await requirePermission("hoa-don", "remove");
   const { id } = await params;
   const inv = await db.invoice.findUnique({ where: { id }, include: { items: true } });
   if (!inv) throw new HttpError(404, "Không tìm thấy hoá đơn");
@@ -24,6 +25,7 @@ export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
     await tx.warranty.deleteMany({ where: { invoiceId: id } });
     await tx.invoice.delete({ where: { id } });
   });
+  await logAudit(user, "delete", "invoice", inv.code, `Xoá hoá đơn ${inv.code}`);
   return ok({ ok: true });
 });
 
@@ -62,7 +64,7 @@ export const GET = handler(async (_req: Request, { params }: Ctx) => {
 
 // Sửa hoá đơn: đổi/thêm/xoá sản phẩm + khách → tính lại tổng, đảo trạng thái máy, giữ tiền đã thu
 export const PATCH = handler(async (req: Request, { params }: Ctx) => {
-  await requirePermission("hoa-don", "edit");
+  const user = await requirePermission("hoa-don", "edit");
   const { id } = await params;
   const b = await req.json();
 
@@ -170,5 +172,6 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
     });
   });
 
+  await logAudit(user, "update", "invoice", inv.code, `Sửa hoá đơn ${inv.code}${wantItems ? ` (${items.length} SP)` : ""}`);
   return ok(serializeInvoice(row!));
 });

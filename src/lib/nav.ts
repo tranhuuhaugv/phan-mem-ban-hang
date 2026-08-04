@@ -149,6 +149,7 @@ export const NAV: NavItem[] = [
     links: [
       { label: "Tài khoản", href: "/cai-dat" },
       { label: "Phân quyền", href: "/cai-dat/phan-quyen" },
+      { label: "Nhật ký thao tác", href: "/cai-dat/nhat-ky" },
       { label: "Cấu hình cửa hàng", href: "/cai-dat/cua-hang" },
     ],
   },

@@ -1,12 +1,13 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
 import { handler, ok, serializeCashFlow } from "@/lib/api-utils";
+import { logAudit } from "@/lib/audit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 // Sửa phiếu thu/chi. Phiếu gắn hoá đơn / NCC: không cho đổi số tiền (sửa ở nguồn), chỉ đổi nội dung/loại/đối tác/ngày/hình thức.
 export const PATCH = handler(async (req: Request, { params }: Ctx) => {
-  await requirePermission("thu-chi", "edit");
+  const user = await requirePermission("thu-chi", "edit");
   const { id } = await params;
   const b = await req.json();
   const cf = await db.cashFlow.findUnique({ where: { id } });
@@ -28,12 +29,13 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
       date: b.date !== undefined ? new Date(b.date) : undefined,
     },
   });
+  await logAudit(user, "update", "cashflow", cf.code, `Sửa phiếu ${cf.type} ${cf.code}`);
   return ok(serializeCashFlow(row));
 });
 
 // Xoá phiếu thu/chi + đảo ngược số liệu: HĐ (trừ đã trả), NCC (cộng lại công nợ)
 export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
-  await requirePermission("thu-chi", "remove");
+  const user = await requirePermission("thu-chi", "remove");
   const { id } = await params;
   const cf = await db.cashFlow.findUnique({ where: { id } });
   if (!cf) throw new HttpError(404, "Không tìm thấy phiếu");
@@ -48,5 +50,6 @@ export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
     }
     await tx.cashFlow.delete({ where: { id } });
   });
+  await logAudit(user, "delete", "cashflow", cf.code, `Xoá phiếu ${cf.type} ${cf.code}`);
   return ok({ ok: true });
 });

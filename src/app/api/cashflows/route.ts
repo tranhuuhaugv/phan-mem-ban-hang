@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
 import { handler, ok, serializeCashFlow, nextCode } from "@/lib/api-utils";
+import { logAudit, auditVnd } from "@/lib/audit";
 
 export const GET = handler(async () => {
   await requirePermission("thu-chi", "view");
@@ -30,5 +31,6 @@ export const POST = handler(async (req: Request) => {
       createdByName: user.fullName,
     },
   });
+  await logAudit(user, "create", "cashflow", row.code, `Tạo phiếu ${type} ${row.code} — ${auditVnd(amount)}`);
   return ok(serializeCashFlow(row), 201);
 });

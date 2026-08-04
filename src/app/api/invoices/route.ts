@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
 import { handler, ok, serializeInvoice, nextCode, upsertCustomer } from "@/lib/api-utils";
+import { logAudit, auditVnd } from "@/lib/audit";
 
 export const GET = handler(async () => {
   await requirePermission("hoa-don", "view");
@@ -73,7 +74,8 @@ export const POST = handler(async (req: Request) => {
       });
       return invoice;
     });
-    return ok(serializeInvoice(row), 201);
+    await logAudit(user, "create", "invoice", row.code, `Tạo hoá đơn ${row.code} — ${auditVnd(row.total)}`);
+  return ok(serializeInvoice(row), 201);
   }
 
   if (b.mode === "order") {
@@ -140,7 +142,8 @@ export const POST = handler(async (req: Request) => {
       }
       return invoice;
     });
-    return ok(serializeInvoice(row), 201);
+    await logAudit(user, "create", "invoice", row.code, `Tạo hoá đơn ${row.code} — ${auditVnd(row.total)}`);
+  return ok(serializeInvoice(row), 201);
   }
 
   // ===== Bán trực tiếp từ kho =====
@@ -251,5 +254,6 @@ export const POST = handler(async (req: Request) => {
     return invoice;
   });
 
+  await logAudit(user, "create", "invoice", row.code, `Tạo hoá đơn ${row.code} — ${auditVnd(row.total)}`);
   return ok(serializeInvoice(row), 201);
 });

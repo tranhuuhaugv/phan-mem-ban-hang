@@ -1,13 +1,14 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
 import { handler, ok, serializeRepair, nextCode } from "@/lib/api-utils";
+import { logAudit } from "@/lib/audit";
 import type { RepairStatus } from "@/generated/prisma/enums";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 // Cập nhật phiếu sửa (KTV, chi phí thực tế, trạng thái) — hoàn tất trả máy về Tồn kho
 export const PATCH = handler(async (req: Request, { params }: Ctx) => {
-  await requirePermission("sua-chua", "edit");
+  const user = await requirePermission("sua-chua", "edit");
   const { id } = await params;
   const b = await req.json();
   const status = b.status as RepairStatus | undefined;
@@ -57,12 +58,13 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
     }
     return updated;
   });
+  await logAudit(user, status === "hoan_tat" ? "status" : "update", "repair", repair.code, `${status === "hoan_tat" ? "Hoàn tất" : "Sửa"} phiếu ${repair.code}`);
   return ok(serializeRepair(row));
 });
 
 // Xoá phiếu sửa: máy về tồn kho (nếu đang sửa), xoá phiếu thu tiền sửa
 export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
-  await requirePermission("sua-chua", "remove");
+  const user = await requirePermission("sua-chua", "remove");
   const { id } = await params;
   const r = await db.repair.findUnique({ where: { id }, include: { invoices: true } });
   if (!r) throw new HttpError(404, "Không tìm thấy phiếu sửa");
@@ -78,5 +80,6 @@ export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
     await tx.cashFlow.deleteMany({ where: { content: { contains: r.code } } });
     await tx.repair.delete({ where: { id } });
   });
+  await logAudit(user, "delete", "repair", r.code, `Xoá phiếu sửa ${r.code}`);
   return ok({ ok: true });
 });

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
 import { handler, ok, serializeOrder, nextCode } from "@/lib/api-utils";
+import { logAudit } from "@/lib/audit";
 import type { OrderStatus } from "@/generated/prisma/enums";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -15,7 +16,7 @@ export const GET = handler(async (_req: Request, { params }: Ctx) => {
 
 // Đổi trạng thái đơn → tự cập nhật trạng thái máy + ghi thu tiền còn lại khi giao
 export const PATCH = handler(async (req: Request, { params }: Ctx) => {
-  await requirePermission("dat-hang", "edit");
+  const user = await requirePermission("dat-hang", "edit");
   const { id } = await params;
   const b = await req.json();
   const status = b.status as OrderStatus | undefined;
@@ -73,12 +74,13 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
     return updated;
   });
 
+  await logAudit(user, status ? "status" : "update", "order", order.code, `${status ? "Đổi trạng thái" : "Sửa"} đơn ${order.code}${status ? ` → ${status}` : ""}`);
   return ok(serializeOrder(row));
 });
 
 // Xoá đơn hàng: máy về tồn kho, xoá phiếu thu cọc/thanh toán của đơn
 export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
-  await requirePermission("dat-hang", "remove");
+  const user = await requirePermission("dat-hang", "remove");
   const { id } = await params;
   const order = await db.order.findUnique({ where: { id }, include: { invoices: true } });
   if (!order) throw new HttpError(404, "Không tìm thấy đơn hàng");
@@ -89,5 +91,6 @@ export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
     await tx.cashFlow.deleteMany({ where: { content: { contains: order.code } } });
     await tx.order.delete({ where: { id } });
   });
+  await logAudit(user, "delete", "order", order.code, `Xoá đơn ${order.code}`);
   return ok({ ok: true });
 });

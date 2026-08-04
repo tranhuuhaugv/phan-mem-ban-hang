@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requirePermission, HttpError } from "@/lib/auth";
 import { handler, ok, serializeMachine } from "@/lib/api-utils";
+import { logAudit } from "@/lib/audit";
 import type { Condition, MachineStatus } from "@/generated/prisma/enums";
 
 type Ctx = { params: Promise<{ serial: string }> };
@@ -48,7 +49,7 @@ export const GET = handler(async (_req: Request, { params }: Ctx) => {
 });
 
 export const PATCH = handler(async (req: Request, { params }: Ctx) => {
-  await requirePermission("kho", "edit");
+  const user = await requirePermission("kho", "edit");
   const { serial } = await params;
   const m = await findMachine(serial);
   const b = await req.json();
@@ -74,11 +75,12 @@ export const PATCH = handler(async (req: Request, { params }: Ctx) => {
     },
     include: { branch: true, supplier: true },
   });
+  await logAudit(user, "update", "machine", m.serial, `Sửa sản phẩm ${m.serial}`);
   return ok(serializeMachine(row));
 });
 
 export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
-  await requirePermission("kho", "remove");
+  const user = await requirePermission("kho", "remove");
   const { serial } = await params;
   const m = await findMachine(serial);
 
@@ -91,5 +93,6 @@ export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
     db.buyReceipt.updateMany({ where: { machineId: m.id }, data: { machineId: null } }),
     db.machine.delete({ where: { id: m.id } }),
   ]);
+  await logAudit(user, "delete", "machine", m.serial, `Xoá sản phẩm ${m.serial}`);
   return ok({ ok: true });
 });

@@ -386,3 +386,19 @@ model Account {
 
   sales Invoice[]
 }
+
+// Nhật ký thao tác — ai tạo/sửa/xoá phiếu, hoá đơn, thu chi...
+model AuditLog {
+  id       String   @id @default(cuid())
+  at       DateTime @default(now())
+  userId   String?
+  userName String
+  role     Role?
+  action   String // create | update | delete | pay | approve | status
+  entity   String // invoice | cashflow | stockin | order | repair | buy | machine
+  code     String? // mã phiếu / hoá đơn
+  detail   String? // mô tả ngắn
+
+  @@index([at])
+  @@index([entity])
+}
